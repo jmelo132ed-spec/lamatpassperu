@@ -704,17 +704,19 @@ const assistJson = JSON.stringify(assistProduct);
   function continueCheckout(selection) {
     if (!validate()) return;
     const people = Math.max(1, (selection.adults || 0) + (selection.children || 0) + (selection.infants || 0));
+    const emailInput = document.querySelector('input[name="contact-email"]');
     sessionStorage.setItem(
       PAX_KEY,
       JSON.stringify({
         savedAt: new Date().toISOString(),
         assistAdded: state.assistAdded,
         assistPrice: state.assistAdded ? assist.pricePerPerson * people : 0,
+        email: emailInput?.value || '',
       }),
     );
     const search = selection.search || '';
     const qs = search.startsWith('?') ? search : search ? `?${search}` : '';
-    window.location.href = `/login${qs}`;
+    window.location.href = `/pagos${qs}`;
   }
 
   const selection = readJson(STORAGE_KEY, null);

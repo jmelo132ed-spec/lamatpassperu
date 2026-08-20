@@ -1,0 +1,809 @@
+---
+import { defaultPaymentLegs, paymentCopy } from '../../data/paymentData';
+
+const copy = paymentCopy;
+const legsJson = JSON.stringify(defaultPaymentLegs);
+---
+
+<section
+  class="pagos-board"
+  id="pagos-board"
+  data-legs={legsJson}
+  data-copy={JSON.stringify(copy)}
+>
+  <h1 class="pagos-title">{copy.title}</h1>
+
+  <article class="pagos-summary" id="pagos-summary">
+    <div class="pagos-summary__top">
+      <div>
+        <div class="pagos-summary__total-label">{copy.totalLabel}</div>
+        <div class="pagos-summary__pax" id="pagos-pax-label">1 Adulto</div>
+      </div>
+      <div class="pagos-summary__price" id="pagos-total-price">$0,00</div>
+    </div>
+    <hr class="pagos-summary__rule" />
+    <ol class="pagos-summary__legs" id="pagos-legs"></ol>
+    <div class="pagos-summary__foot">
+      <button type="button" class="pagos-summary__detail" id="pagos-detail-toggle">{copy.detailCta}</button>
+    </div>
+  </article>
+
+  <h2 class="pagos-section-title">{copy.methodsTitle}</h2>
+
+  <div class="pagos-wallet" id="pagos-wallet">
+    <div class="pagos-wallet__art" aria-hidden="true">
+      <img src="/images/pagos-assets/push-login-full.png" alt="" />
+    </div>
+    <div class="pagos-wallet__copy">
+      <p class="pagos-wallet__title">{copy.walletTitle}</p>
+      <p class="pagos-wallet__sub">{copy.walletSubtitle}</p>
+      <button type="button" class="pagos-wallet__link" id="pagos-wallet-login">
+        {copy.walletLogin} <span aria-hidden="true">›</span>
+      </button>
+    </div>
+  </div>
+  <p class="pagos-wallet-msg" id="pagos-wallet-msg" hidden role="status">{copy.walletUnavailable}</p>
+
+  <div class="pagos-method" id="pagos-add-card">
+    <button
+      type="button"
+      class="pagos-method__toggle"
+      id="pagos-add-card-toggle"
+      aria-expanded="false"
+      aria-controls="pagos-card-form"
+    >
+      <span class="pagos-method__ico" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="24" height="24" fill="none">
+          <rect x="3" y="8" width="22" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8" />
+          <path stroke="currentColor" stroke-width="1.8" d="M3 13h22" />
+          <circle cx="25.5" cy="23.5" r="5.5" fill="#fff" stroke="currentColor" stroke-width="1.6" />
+          <path stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M25.5 21v5M23 23.5h5" />
+        </svg>
+      </span>
+      <span class="pagos-method__text">
+        <strong>{copy.addCardTitle}</strong>
+        <span>{copy.addCardSubtitle}</span>
+      </span>
+      <span class="pagos-method__radio" aria-hidden="true"></span>
+    </button>
+
+    <div class="pagos-card-form" id="pagos-card-form" hidden>
+      <div class="pagos-card-payline">
+        <span>{copy.payWithCard}</span>
+        <strong id="pagos-card-amount">$0,00</strong>
+      </div>
+      <div class="pagos-card-grid">
+        <form class="pagos-card-grid-form" id="pagos-card-fields" autocomplete="off" novalidate onsubmit="return false;">
+        <label class="pagos-card-input pagos-card-input--number" id="pagos-card-number-field">
+          <span class="pagos-card-float" aria-hidden="true" data-label={copy.cardNumberPh}></span>
+          <span class="pagos-card-number-box" id="pagos-card-number-box">
+            <span class="pagos-card-brand" id="pagos-card-brand" hidden aria-hidden="true">
+              <img class="pagos-card-brand__logo" data-brand-logo="visa" src="/images/pagos-assets/brands/visa.png" alt="" width="40" height="13" />
+              <img class="pagos-card-brand__logo" data-brand-logo="mastercard" src="/images/pagos-assets/brands/mastercard.png" alt="" width="34" height="22" />
+              <img class="pagos-card-brand__logo" data-brand-logo="amex" src="/images/pagos-assets/brands/amex.png" alt="" width="36" height="24" />
+              <img class="pagos-card-brand__logo" data-brand-logo="diners" src="/images/pagos-assets/brands/diners.png" alt="" width="34" height="22" />
+              <img class="pagos-card-brand__logo" data-brand-logo="discover" src="/images/pagos-assets/brands/discover.png" alt="" width="52" height="34" />
+            </span>
+            <input
+              type="text"
+              name="fld_a"
+              id="pagos-card-number"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              data-lpignore="true"
+              data-form-type="other"
+              data-1p-ignore="true"
+              placeholder=" "
+              maxlength="19"
+              readonly
+            />
+            <span class="pagos-card-ok" id="pagos-card-number-ok" hidden aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="1.6" />
+                <path d="M7.2 12.2l3.1 3.1 6.5-6.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </span>
+          <p class="pagos-card-error" id="pagos-card-number-error" hidden></p>
+        </label>
+        <label class="pagos-card-input">
+          <span class="pagos-card-ph" aria-hidden="true" data-label={copy.cardNamePh}></span>
+          <input
+            type="text"
+            name="fld_b"
+            id="pagos-card-name"
+            autocomplete="one-time-code"
+            data-lpignore="true"
+            data-form-type="other"
+            data-1p-ignore="true"
+            placeholder=" "
+            readonly
+          />
+          <p class="pagos-card-error" id="pagos-card-name-error" hidden></p>
+        </label>
+        <label class="pagos-card-input pagos-card-input--half">
+          <span class="pagos-card-ph" aria-hidden="true" data-label={copy.cardExpPh}></span>
+          <input
+            type="text"
+            name="fld_c"
+            id="pagos-card-exp"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            data-lpignore="true"
+            data-form-type="other"
+            data-1p-ignore="true"
+            placeholder=" "
+            maxlength="7"
+            readonly
+          />
+          <p class="pagos-card-error" id="pagos-card-exp-error" hidden></p>
+        </label>
+        <label class="pagos-card-input" id="pagos-card-cvv-wrap" hidden>
+          <span class="pagos-card-ph" aria-hidden="true" data-label={copy.cardCvvPh}></span>
+          <input
+            type="text"
+            name="fld_d"
+            id="pagos-card-cvv"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            data-lpignore="true"
+            data-form-type="other"
+            data-1p-ignore="true"
+            placeholder=" "
+            maxlength="4"
+            readonly
+          />
+          <p class="pagos-card-error" id="pagos-card-cvv-error" hidden></p>
+        </label>
+        <label class="pagos-card-input pagos-card-input--half">
+          <span class="pagos-card-ph" aria-hidden="true" data-label={copy.cardEmailPh}></span>
+          <input
+            type="text"
+            name="fld_e"
+            id="pagos-card-email"
+            inputmode="email"
+            autocomplete="one-time-code"
+            data-lpignore="true"
+            data-form-type="other"
+            data-1p-ignore="true"
+            placeholder=" "
+            readonly
+          />
+          <p class="pagos-card-error" id="pagos-card-email-error" hidden></p>
+        </label>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="pagos-section-title pagos-section-title--sm">{copy.receiptTitle}</h2>
+  <div class="pagos-panel">
+    <p class="pagos-panel__hint">
+      La persona que reciba el comprobante será <strong>administradora del viaje</strong> y la única que podrá solicitar
+      cambios y devoluciones.
+    </p>
+    <label class="pagos-field pagos-field--filled">
+      <span>Email</span>
+      <input type="email" id="pagos-email" name="email" autocomplete="email" required />
+    </label>
+  </div>
+
+  <h2 class="pagos-section-title pagos-section-title--sm">{copy.invoiceTitle}</h2>
+    <div class="pagos-invoice" id="pagos-invoice">
+    <div class="pagos-invoice__head">
+      <span class="pagos-invoice__ico" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="22" height="22"><path fill="currentColor" d="M8 4h12l6 6v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm11 1.5V11h5.5L19 5.5ZM10 15h12v2H10v-2Zm0 4h12v2H10v-2Zm0 4h8v2h-8v-2Z"></path></svg>
+      </span>
+      <span class="pagos-invoice__label" id="pagos-invoice-label">{copy.invoiceToggle}</span>
+      <button
+        type="button"
+        class="pagos-switch"
+        id="pagos-invoice-toggle"
+        role="switch"
+        aria-checked="false"
+        aria-labelledby="pagos-invoice-label"
+        aria-controls="pagos-invoice-panel"
+      >
+        <span class="pagos-switch__thumb"></span>
+      </button>
+    </div>
+
+    <div class="pagos-invoice__panel" id="pagos-invoice-panel" hidden>
+      <div class="pagos-invoice__tips" role="note">
+        <span class="pagos-invoice__tips-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <circle cx="12" cy="12" r="10" fill="currentColor"></circle>
+            <path fill="#ffffff" d="M11 10h2v7h-2v-7Zm0-4h2v2h-2V6Z"></path>
+          </svg>
+        </span>
+        <ul>
+          <li>Factura válida para personas y empresas inscritas en Ecuador.</li>
+          <li>Para justificar costos o gastos, ingresar el RUC, de lo contrario el documento tendrá validez de boleta de venta.</li>
+          <li>Aplica un solo RUC para toda la compra.</li>
+        </ul>
+      </div>
+
+      <div class="pagos-invoice__grid">
+        <label class="pagos-card-input">
+          <span class="pagos-sr-only">Razón social</span>
+          <input type="text" name="invoiceBusinessName" autocomplete="organization" placeholder="Razón social" />
+        </label>
+        <label class="pagos-card-input">
+          <span class="pagos-sr-only">RUC</span>
+          <input type="text" name="invoiceRuc" inputmode="numeric" placeholder="RUC" maxlength="13" />
+        </label>
+        <label class="pagos-card-input pagos-card-input--select">
+          <span class="pagos-sr-only">País</span>
+          <select name="invoiceCountry" aria-label="País" disabled>
+            <option value="EC" selected>Ecuador</option>
+          </select>
+        </label>
+        <label class="pagos-card-input">
+          <span class="pagos-sr-only">Ciudad</span>
+          <input type="text" name="invoiceCity" autocomplete="address-level2" placeholder="Ciudad" />
+        </label>
+        <label class="pagos-card-input pagos-card-input--half">
+          <span class="pagos-sr-only">Email</span>
+          <input type="email" name="invoiceEmail" autocomplete="email" placeholder="Email" />
+          <p class="pagos-invoice__hint">Este correo recibirá la factura</p>
+        </label>
+      </div>
+
+      <label class="pagos-invoice__confirm">
+        <input type="checkbox" id="pagos-invoice-confirm" name="invoiceConfirm" />
+        <span>Confirmo que los datos son correctos y que coinciden con los del Servicio de Rentas Internas de Ecuador.</span>
+      </label>
+    </div>
+  </div>
+
+<div class="pagos-actions">
+    <label class="pagos-terms">
+      <input type="checkbox" id="pagos-terms" />
+      <span>
+        {copy.termsPrefix}
+        <a href={copy.termsHref} target="_blank" rel="noopener noreferrer">
+          {copy.termsLink}
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M6 3h7v7h-2V6.4L4.7 12.7 3.3 11.3 9.6 5H6V3Z"/></svg>
+        </a>
+      </span>
+    </label>
+    <button type="button" class="pagos-pay" id="pagos-pay" disabled>{copy.payPrefix} USD 0,00</button>
+  </div>
+
+  <p class="pagos-msg" id="pagos-msg" hidden></p>
+</section>
+
+<div
+  class="offers-wait-screen pagos-wait-screen"
+  id="pagos-wait-screen"
+  hidden
+  role="status"
+  aria-live="assertive"
+  aria-busy="true"
+  aria-label={copy.processingTitle}
+>
+  <span class="offers-wait-screen__spin" aria-hidden="true"></span>
+  <p class="offers-wait-screen__text pagos-wait-screen__title">{copy.processingTitle}</p>
+  <p class="pagos-wait-screen__hint">{copy.processingHint}</p>
+</div>
+
+<div class="pagos-sheet" id="pagos-sheet" hidden>
+  <button type="button" class="pagos-sheet__backdrop" data-pagos-sheet-close aria-label="Cerrar"></button>
+  <div class="pagos-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="pagos-sheet-title">
+    <header class="pagos-sheet__head">
+      <h3 id="pagos-sheet-title">Detalle de tu compra</h3>
+      <button type="button" class="pagos-sheet__close" data-pagos-sheet-close aria-label="Cerrar">×</button>
+    </header>
+    <div class="pagos-sheet__body" id="pagos-sheet-body"></div>
+  </div>
+</div>
+
+<script>
+  import {
+    cardNumberMaxLength,
+    detectCardBrand,
+    formatCardExp,
+    formatCardNumber,
+    onlyDigits,
+    validateCardExp,
+    validateCardNumber,
+  } from '../../services/cardPaymentValidation';
+
+  const boardEl = document.getElementById('pagos-board');
+  const legsJson = boardEl?.dataset.legs || '[]';
+  const copy = JSON.parse(boardEl?.dataset.copy || '{}');
+
+  const STORAGE_KEY = 'latam-checkout-selection';
+  const SEATS_KEY = 'latam-seat-selection';
+  const STORE_KEY = 'latam-store-selection';
+  const PAX_KEY = 'latam-passenger-draft';
+  const defaultLegs = JSON.parse(legsJson);
+
+  function money(value, withUsd = false) {
+    const n = Number(value || 0);
+    const formatted = n.toFixed(2).replace('.', ',');
+    return withUsd ? `USD\u00a0${formatted}` : `$${formatted}`;
+  }
+
+  function readJson(key, fallback) {
+    try {
+      return JSON.parse(sessionStorage.getItem(key) || 'null') ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function peopleLabel(selection) {
+    const adults = Math.max(1, Number(selection?.adults || 1));
+    const children = Number(selection?.children || 0);
+    const infants = Number(selection?.infants || 0);
+    const parts = [];
+    parts.push(`${adults} Adulto${adults === 1 ? '' : 's'}`);
+    if (children) parts.push(`${children} Niño${children === 1 ? '' : 's'}`);
+    if (infants) parts.push(`${infants} Infante${infants === 1 ? '' : 's'}`);
+    return parts.join(', ');
+  }
+
+  function formatShortDate(iso) {
+    if (!iso) return '';
+    const d = new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return iso;
+    const days = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+  }
+
+  function buildLegs(selection) {
+    if (!selection?.outbound?.flight) return defaultLegs;
+    const out = selection.outbound.flight;
+    const legs = [
+      {
+        title: `De ${selection.from?.city || 'Origen'} a ${selection.to?.city || 'Destino'}`,
+        dateLabel: formatShortDate(selection.departDate) || defaultLegs[0].dateLabel,
+        depart: out.depart || '',
+        arrive: out.arrive || '',
+        fromCode: selection.from?.code || '',
+        toCode: selection.to?.code || '',
+        brand: selection.outbound?.brandName || selection.outbound?.brand || 'Full',
+      },
+    ];
+    if (selection.trip === 'roundtrip' && selection.inbound?.flight) {
+      const back = selection.inbound.flight;
+      legs.push({
+        title: `De ${selection.to?.city || 'Destino'} a ${selection.from?.city || 'Origen'}`,
+        dateLabel: formatShortDate(selection.returnDate) || defaultLegs[1]?.dateLabel || '',
+        depart: back.depart || '',
+        arrive: back.arrive || '',
+        fromCode: selection.to?.code || '',
+        toCode: selection.from?.code || '',
+        brand: selection.inbound?.brandName || selection.inbound?.brand || 'Full',
+      });
+    }
+    return legs;
+  }
+
+  function tripBase(selection) {
+    const people = Math.max(1, (selection?.adults || 0) + (selection?.children || 0) + (selection?.infants || 0));
+    const out = Number(selection?.outbound?.price || 0);
+    const back = selection?.trip === 'roundtrip' ? Number(selection?.inbound?.price || 0) : 0;
+    return (out + back) * people;
+  }
+
+  function seatExtras(seats) {
+    return Number(seats?.outbound?.price || 0) + Number(seats?.inbound?.price || 0);
+  }
+
+  function bagExtras(store) {
+    const hold = Number(store?.holdCount || 0) * 45;
+    const special = Number(store?.specialCount || 0) * 35;
+    const cabin = store?.cabin === 'cabin-plus' ? 25 : 0;
+    const car = store?.selectedCarId ? Number(store?.selectedCarPrice || 0) : 0;
+    return hold + special + cabin + car;
+  }
+
+  function computeTotal(selection, seats, store, pax) {
+    return tripBase(selection) + seatExtras(seats) + bagExtras(store) + Number(pax?.assistPrice || 0);
+  }
+
+  function renderLegs(legs) {
+    const root = document.getElementById('pagos-legs');
+    if (!root) return;
+    root.innerHTML = legs
+      .map(
+        (leg) => `
+      <li class="pagos-leg">
+        <p class="pagos-leg__title">${leg.title}</p>
+        <p class="pagos-leg__date">${leg.dateLabel}</p>
+        <p class="pagos-leg__times">
+          <span class="pagos-leg__dep">${leg.depart} ${leg.fromCode}</span>
+          <i class="pagos-leg__arrow" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="10" height="10"><path fill="currentColor" d="M13.55 4.45L23.4025 14.25L2 14.25L2 17.75L23.4025 17.75L13.55 27.55L16 30L30 16L16 2L13.55 4.45Z"/></svg>
+          </i>
+          <span class="pagos-leg__arr">${leg.arrive} ${leg.toCode}</span>
+        </p>
+        <div class="pagos-leg__brand-wrap">
+          <span class="pagos-leg__brand">${leg.brand}</span>
+        </div>
+      </li>
+    `,
+      )
+      .join('');
+  }
+
+  function renderDetail(selection, seats, store, pax, total) {
+    const body = document.getElementById('pagos-sheet-body');
+    if (!body) return;
+    body.innerHTML = `
+      <p><strong>Vuelos</strong> · ${money(tripBase(selection), true)}</p>
+      <p><strong>Asientos</strong> · ${money(seatExtras(seats), true)}</p>
+      <p><strong>Equipaje / extras</strong> · ${money(bagExtras(store), true)}</p>
+      <p><strong>Asistencia</strong> · ${money(pax?.assistPrice || 0, true)}</p>
+      <p class="pagos-sheet__total"><strong>Total</strong> · ${money(total, true)}</p>
+      <p class="pagos-sheet__note">Incluye tasas, cargos e impuestos.</p>
+    `;
+  }
+
+  const selection = readJson(STORAGE_KEY, null);
+  const seats = readJson(SEATS_KEY, {});
+  const store = readJson(STORE_KEY, {});
+  const pax = readJson(PAX_KEY, {});
+  const total = selection?.outbound ? computeTotal(selection, seats, store, pax) : 350.46;
+  const legs = buildLegs(selection || {});
+
+  renderLegs(legs);
+  renderDetail(selection || {}, seats, store, pax, total);
+
+  const priceEl = document.getElementById('pagos-total-price');
+  const paxEl = document.getElementById('pagos-pax-label');
+  const payBtn = document.getElementById('pagos-pay');
+  const terms = document.getElementById('pagos-terms');
+  const email = document.getElementById('pagos-email');
+  const addCard = document.getElementById('pagos-add-card');
+  const addCardToggle = document.getElementById('pagos-add-card-toggle');
+  const cardForm = document.getElementById('pagos-card-form');
+  const cardAmount = document.getElementById('pagos-card-amount');
+  const invoiceToggle = document.getElementById('pagos-invoice-toggle');
+  const invoicePanel = document.getElementById('pagos-invoice-panel');
+  const invoiceBox = document.getElementById('pagos-invoice');
+  const invoiceConfirm = document.getElementById('pagos-invoice-confirm');
+  const sheet = document.getElementById('pagos-sheet');
+  const msg = document.getElementById('pagos-msg');
+  const walletLogin = document.getElementById('pagos-wallet-login');
+  const walletMsg = document.getElementById('pagos-wallet-msg');
+  const cardEmail = document.getElementById('pagos-card-email');
+  const cardNumber = document.getElementById('pagos-card-number');
+  const cardName = document.getElementById('pagos-card-name');
+  const cardExp = document.getElementById('pagos-card-exp');
+  const cardCvvWrap = document.getElementById('pagos-card-cvv-wrap');
+  const cardCvv = document.getElementById('pagos-card-cvv');
+  const cardBrandEl = document.getElementById('pagos-card-brand');
+  const cardNumberBox = document.getElementById('pagos-card-number-box');
+  const cardNumberOk = document.getElementById('pagos-card-number-ok');
+  const cardNumberField = document.getElementById('pagos-card-number-field');
+  const cardNumberError = document.getElementById('pagos-card-number-error');
+  const cardNameError = document.getElementById('pagos-card-name-error');
+  const cardExpError = document.getElementById('pagos-card-exp-error');
+  const cardCvvError = document.getElementById('pagos-card-cvv-error');
+  const cardEmailError = document.getElementById('pagos-card-email-error');
+
+  if (priceEl) priceEl.textContent = money(total);
+  if (cardAmount) cardAmount.textContent = money(total);
+  if (paxEl) paxEl.textContent = peopleLabel(selection);
+  if (payBtn) payBtn.textContent = `${copy.payPrefix} ${money(total, true)}`;
+  if (email && pax?.email) email.value = pax.email;
+
+  function isValidEmail(value) {
+    const v = String(value || '').trim();
+    return v.includes('@') && v.indexOf('@') > 0 && v.indexOf('@') < v.length - 1;
+  }
+
+  function syncEmailValidity(input) {
+    if (!input) return;
+    const v = input.value.trim();
+    const invalid = Boolean(v) && !isValidEmail(v);
+    input.setCustomValidity(invalid ? 'Ingresa un correo que incluya @' : '');
+    input.classList.toggle('is-invalid', invalid);
+    input.closest('.pagos-field')?.classList.toggle('is-invalid', invalid);
+  }
+
+  function validateCardName(value) {
+    const name = String(value || '').trim();
+    if (!name) return { valid: false, incomplete: true, message: '' };
+    if (name.length < 2) {
+      return { valid: false, incomplete: false, message: 'Ingresa el nombre como aparece en la tarjeta' };
+    }
+    return { valid: true, incomplete: false, message: '' };
+  }
+
+  function validateCardCvv(value, brand) {
+    const digits = onlyDigits(value);
+    const len = brand.cvvLength;
+    if (!digits) return { valid: false, incomplete: true, message: '' };
+    if (digits.length < len) {
+      return { valid: false, incomplete: true, message: `Ingresa los ${len} dígitos del CVV` };
+    }
+    if (digits.length !== len) {
+      return { valid: false, incomplete: false, message: 'CVV inválido' };
+    }
+    return { valid: true, incomplete: false, message: '' };
+  }
+
+  function isCardPaymentValid() {
+    const number = validateCardNumber(cardNumber?.value || '');
+    const name = validateCardName(cardName?.value || '');
+    const exp = validateCardExp(cardExp?.value || '');
+    const cvv = validateCardCvv(cardCvv?.value || '', number.brand);
+    return Boolean(number.valid && name.valid && exp.valid && cvv.valid);
+  }
+
+  function syncPayEnabled() {
+    const receiptOk = isValidEmail(email?.value);
+    const cardOpen = addCardToggle?.getAttribute('aria-expanded') === 'true';
+    const cardEmailOk = !cardOpen || isValidEmail(cardEmail?.value);
+    const cardFieldsOk = !cardOpen || isCardPaymentValid();
+    const ok = Boolean(terms?.checked && receiptOk && cardEmailOk && cardFieldsOk);
+    if (payBtn) payBtn.disabled = !ok;
+  }
+
+  terms?.addEventListener('change', syncPayEnabled);
+  email?.addEventListener('input', () => {
+    syncEmailValidity(email);
+    syncPayEnabled();
+  });
+  email?.addEventListener('blur', () => syncEmailValidity(email));
+  syncPayEnabled();
+
+  function setCardOpen(open) {
+    if (!addCard || !addCardToggle || !cardForm) return;
+    addCard.classList.toggle('is-selected', open);
+    addCardToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    addCardToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
+    cardForm.hidden = !open;
+    if (open) syncCardFieldStates();
+    else syncPayEnabled();
+  }
+
+  if (addCardToggle) {
+    addCardToggle.onclick = () => {
+      if (addCardToggle.getAttribute('aria-expanded') === 'true') return;
+      setCardOpen(true);
+    };
+  }
+
+  function setFormattedValue(input, formatted) {
+    if (!input) return;
+    const start = input.selectionStart;
+    const prev = input.value;
+    input.value = formatted;
+    if (typeof start === 'number' && document.activeElement === input) {
+      const diff = formatted.length - prev.length;
+      const next = Math.max(0, start + diff);
+      try {
+        input.setSelectionRange(next, next);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function setFieldError(input, errorEl, message, { valid = false, showError = false } = {}) {
+    if (!input) return;
+    const hasError = Boolean(showError && message);
+    input.classList.toggle('is-invalid', hasError);
+    input.classList.toggle('is-valid', Boolean(valid) && !hasError);
+    input.setAttribute('aria-invalid', hasError ? 'true' : 'false');
+    if (errorEl) {
+      errorEl.hidden = !hasError;
+      errorEl.textContent = hasError ? message : '';
+    }
+  }
+
+  function currentBrand() {
+    return detectCardBrand(cardNumber?.value || '');
+  }
+
+  function syncBrandUi(brand, numberValid = false) {
+    if (cardNumber) cardNumber.maxLength = cardNumberMaxLength(brand);
+    if (cardCvv) cardCvv.maxLength = brand.cvvLength;
+
+    const showBrand = brand.brand !== 'unknown' && Boolean(brand.label);
+    if (cardBrandEl) {
+      cardBrandEl.hidden = !showBrand;
+      cardBrandEl.dataset.brand = brand.brand;
+      cardBrandEl.querySelectorAll('[data-brand-logo]').forEach((logo) => {
+        logo.hidden = logo.getAttribute('data-brand-logo') !== brand.brand;
+      });
+    }
+
+    cardNumberBox?.classList.toggle('has-brand', showBrand);
+    cardNumberBox?.classList.toggle('is-valid', Boolean(numberValid));
+    if (cardNumberBox) cardNumberBox.dataset.brand = showBrand ? brand.brand : '';
+    cardNumberField?.classList.toggle('has-brand', showBrand);
+    cardNumberField?.classList.toggle('is-filled', onlyDigits(cardNumber?.value || '').length > 0);
+
+    if (cardNumberOk) {
+      cardNumberOk.hidden = !numberValid;
+    }
+  }
+
+  function cardReadyForCvv() {
+    const number = validateCardNumber(cardNumber?.value || '');
+    const hasNumber = onlyDigits(cardNumber?.value || '').length >= number.brand.length;
+    const hasName = String(cardName?.value || '').trim().length >= 2;
+    const hasExp = onlyDigits(cardExp?.value || '').length === 4;
+    return hasNumber && hasName && hasExp;
+  }
+
+  function syncCardCvvVisibility() {
+    if (!cardCvvWrap) return;
+    const show = cardReadyForCvv();
+    const wasHidden = cardCvvWrap.hidden;
+    cardCvvWrap.hidden = !show;
+    if (show && wasHidden) cardCvv?.focus();
+    if (!show && cardCvv) {
+      cardCvv.value = '';
+      setFieldError(cardCvv, cardCvvError, '', {});
+    }
+  }
+
+  function syncCardFieldStates(opts = {}) {
+    const force = Boolean(opts.force);
+    const number = validateCardNumber(cardNumber?.value || '');
+    const name = validateCardName(cardName?.value || '');
+    const exp = validateCardExp(cardExp?.value || '');
+    const cvv = validateCardCvv(cardCvv?.value || '', number.brand);
+
+    syncBrandUi(number.brand, number.valid);
+
+    setFieldError(cardNumber, cardNumberError, number.message, {
+      valid: number.valid,
+      showError: force || (!number.incomplete && Boolean(number.message)),
+    });
+    cardNumberBox?.classList.toggle('is-invalid', Boolean(
+      (force || (!number.incomplete && Boolean(number.message))) && number.message,
+    ));
+    setFieldError(cardName, cardNameError, name.message, {
+      valid: name.valid,
+      showError: force || (!name.incomplete && Boolean(name.message)),
+    });
+    setFieldError(cardExp, cardExpError, exp.message, {
+      valid: exp.valid,
+      showError: force || (!exp.incomplete && Boolean(exp.message)),
+    });
+
+    if (!cardCvvWrap?.hidden) {
+      setFieldError(cardCvv, cardCvvError, cvv.message, {
+        valid: cvv.valid,
+        showError: force || (!cvv.incomplete && Boolean(cvv.message)),
+      });
+    }
+
+    syncCardCvvVisibility();
+    syncPayEnabled();
+  }
+
+  function syncCardEmailError() {
+    if (!cardEmail) return;
+    const v = cardEmail.value.trim();
+    const invalid = Boolean(v) && !isValidEmail(v);
+    const empty = !v;
+    setFieldError(cardEmail, cardEmailError, invalid ? 'Ingresa un correo que incluya @' : '', {
+      valid: !empty && !invalid,
+      showError: invalid,
+    });
+  }
+
+  cardNumber?.addEventListener('focus', () => cardNumber.removeAttribute('readonly'));
+  cardName?.addEventListener('focus', () => cardName.removeAttribute('readonly'));
+  cardExp?.addEventListener('focus', () => cardExp.removeAttribute('readonly'));
+  cardCvv?.addEventListener('focus', () => cardCvv.removeAttribute('readonly'));
+  cardEmail?.addEventListener('focus', () => cardEmail.removeAttribute('readonly'));
+
+  function syncPlaceholderState(input) {
+    input?.closest('.pagos-card-input')?.classList.toggle(
+      'has-value',
+      Boolean(String(input?.value || '').trim()),
+    );
+  }
+
+  cardNumber?.addEventListener('input', () => {
+    const brand = detectCardBrand(cardNumber.value);
+    setFormattedValue(cardNumber, formatCardNumber(cardNumber.value, brand));
+    syncCardFieldStates();
+  });
+  cardNumber?.addEventListener('blur', () => {
+    const brand = detectCardBrand(cardNumber.value);
+    setFormattedValue(cardNumber, formatCardNumber(cardNumber.value, brand));
+    syncCardFieldStates({ force: true });
+  });
+  cardName?.addEventListener('input', () => {
+    cardName.value = String(cardName.value || '').replace(/\d/g, '');
+    syncPlaceholderState(cardName);
+    syncCardFieldStates();
+  });
+  cardName?.addEventListener('blur', () => syncCardFieldStates({ force: true }));
+  cardExp?.addEventListener('input', () => {
+    setFormattedValue(cardExp, formatCardExp(cardExp.value));
+    syncPlaceholderState(cardExp);
+    syncCardFieldStates();
+  });
+  cardExp?.addEventListener('blur', () => {
+    setFormattedValue(cardExp, formatCardExp(cardExp.value));
+    syncCardFieldStates({ force: true });
+  });
+  cardCvv?.addEventListener('input', () => {
+    const brand = currentBrand();
+    cardCvv.value = onlyDigits(cardCvv.value).slice(0, brand.cvvLength);
+    syncPlaceholderState(cardCvv);
+    syncCardFieldStates();
+  });
+  cardCvv?.addEventListener('blur', () => syncCardFieldStates({ force: true }));
+  cardEmail?.addEventListener('input', () => {
+    syncPlaceholderState(cardEmail);
+    syncEmailValidity(cardEmail);
+    syncCardEmailError();
+    syncPayEnabled();
+  });
+  cardEmail?.addEventListener('blur', () => {
+    syncEmailValidity(cardEmail);
+    syncCardEmailError();
+  });
+  syncPlaceholderState(cardName);
+  syncPlaceholderState(cardExp);
+  syncPlaceholderState(cardCvv);
+  syncPlaceholderState(cardEmail);
+  syncCardFieldStates();
+
+  if (walletLogin) {
+    walletLogin.onclick = () => {
+      if (!walletMsg) return;
+      walletMsg.hidden = false;
+      walletMsg.textContent = copy.walletUnavailable;
+    };
+  }
+
+  function setInvoiceOpen(on) {
+    if (!invoiceToggle) return;
+    invoiceToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+    invoiceToggle.classList.toggle('is-on', on);
+    invoiceBox?.classList.toggle('is-on', on);
+    if (invoicePanel) invoicePanel.hidden = !on;
+    if (!on && invoiceConfirm) invoiceConfirm.checked = false;
+  }
+
+  if (invoiceToggle) {
+    invoiceToggle.onclick = (event) => {
+      event.stopPropagation();
+      const on = invoiceToggle.getAttribute('aria-checked') !== 'true';
+      setInvoiceOpen(on);
+    };
+  }
+
+  function setSheet(open) {
+    if (!sheet) return;
+    sheet.hidden = !open;
+    sheet.classList.toggle('is-open', open);
+    document.body.classList.toggle('pagos-sheet-open', open);
+  }
+
+  document.getElementById('pagos-detail-toggle')?.addEventListener('click', () => setSheet(true));
+  sheet?.querySelectorAll('[data-pagos-sheet-close]').forEach((el) => el.addEventListener('click', () => setSheet(false)));
+
+  payBtn?.addEventListener('click', () => {
+    if (payBtn.disabled) return;
+    const wait = document.getElementById('pagos-wait-screen');
+    if (wait) wait.hidden = false;
+    document.body.classList.add('is-offers-waiting');
+    payBtn.disabled = true;
+    sessionStorage.setItem(
+      'latam-payment-draft',
+      JSON.stringify({
+        paidAt: new Date().toISOString(),
+        total,
+        email: email?.value || '',
+        invoice: invoiceToggle?.getAttribute('aria-checked') === 'true',
+        method: addCard?.classList.contains('is-selected') ? 'card' : 'none',
+      }),
+    );
+  });
+</script>
