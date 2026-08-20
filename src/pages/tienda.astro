@@ -1,0 +1,32 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import StoreBoard from '../components/store/StoreBoard.astro';
+import { getHomePageData } from '../services/api';
+
+const home = await getHomePageData();
+---
+
+<Layout title="Tienda | Compra | LATAM Airlines" bodyClass="is-store-page">
+  <Header
+    variant="offers"
+    discover={home.discoverMenu}
+    trips={home.tripsMenu}
+    helpHref={home.headerLinks.help.href}
+    flightStatusHref={home.headerLinks.flightStatus.href}
+    passHref={home.headerLinks.pass.href}
+    loginHref={home.headerLinks.login.href}
+  />
+  <div class="store-scroll">
+    <main class="store-main">
+      <StoreBoard />
+    </main>
+    <footer class="store-page-footer">
+      <img src="/images/logo-positive.svg" alt="LATAM Airlines" height="20" />
+      <p>© 2026 LATAM Airlines Ecuador</p>
+      <img src="/images/pci.svg" alt="PCI" height="28" />
+    </footer>
+  </div>
+</Layout>

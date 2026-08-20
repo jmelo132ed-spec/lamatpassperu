@@ -1,0 +1,28 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import SeatSelectionBoard from '../components/seats/SeatSelectionBoard.astro';
+import { getHomePageData } from '../services/api';
+
+const home = await getHomePageData();
+---
+
+<Layout title="Selección de asientos | Compra | LATAM Airlines" bodyClass="is-seats-page">
+  <Header
+    variant="offers"
+    discover={home.discoverMenu}
+    trips={home.tripsMenu}
+    helpHref={home.headerLinks.help.href}
+    flightStatusHref={home.headerLinks.flightStatus.href}
+    passHref={home.headerLinks.pass.href}
+    loginHref={home.headerLinks.login.href}
+  />
+  <SeatSelectionBoard />
+  <footer class="seats-footer">
+    <img src="/images/logo-positive.svg" alt="LATAM Airlines" height="20" />
+    <p>© 2026 LATAM Airlines Ecuador</p>
+    <img src="/images/pci.svg" alt="PCI" height="28" />
+  </footer>
+</Layout>

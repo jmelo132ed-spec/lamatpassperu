@@ -1,0 +1,535 @@
+---
+import { cabinOptions, carPartners, holdBagKg, holdBagPrice, specialBagPrice, storeCars } from '../../data/storeData';
+
+const carsJson = JSON.stringify(storeCars);
+const cabinJson = JSON.stringify(cabinOptions);
+---
+
+<div class="store-layout" id="store-board">
+  <div class="store-layout__main">
+    <h1 class="store-title">Personaliza tu viaje</h1>
+
+    <div class="store-sections">
+      <article class="store-accordion is-open" data-section="baggage">
+        <button type="button" class="store-accordion__head" data-accordion-toggle="baggage" aria-expanded="true">
+          <span class="store-accordion__label">
+            <svg class="store-accordion__ico" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M11 4h10v3h5v21H6V7h5V4zm2 2v1h6V6h-6zm-5 4v15h16V10H8zm3 3h2v9h-2v-9zm8 0h2v9h-2v-9z"/></svg>
+            Equipaje
+          </span>
+          <span class="store-accordion__meta">
+            <span class="store-step-pill">1 de 2</span>
+            <svg class="store-accordion__chev" viewBox="0 0 32 32" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M27.55 7.77 16 19.36 4.45 7.77 2 10.22 16 24.22 30 10.22 27.55 7.77Z"/></svg>
+          </span>
+        </button>
+
+        <div class="store-accordion__body" id="store-baggage-body">
+          <h3 class="store-baggage__lead">Compra tu equipaje ahora y paga menos que en aeropuerto</h3>
+
+          <div class="store-toggle-row">
+            <span class="store-toggle-row__label">
+              <img src="/images/tienda-assets/plane.svg" alt="" width="24" height="24" />
+              Agregar el mismo equipaje en todos los vuelos
+            </span>
+            <button type="button" class="store-switch is-on" id="store-same-flights" aria-pressed="true" aria-label="Agregar el mismo equipaje en todos los vuelos">
+              <span class="store-switch__knob"></span>
+            </button>
+          </div>
+
+          <div class="store-pax-chip" id="store-pax-chip">Adulto 1 <span>Pasajero (1 de 1)</span></div>
+
+          <div class="store-block">
+            <div class="store-block__head">Selecciona qué <strong>llevarás en cabina</strong></div>
+            <div class="store-cabin-grid" id="store-cabin-options" role="radiogroup" aria-label="Equipaje en cabina">
+              {cabinOptions.map((opt, i) => (
+                <button
+                  type="button"
+                  class={`store-cabin-card${i === 0 ? ' is-selected' : ''}`}
+                  data-cabin={opt.id}
+                  data-price={opt.price}
+                  role="radio"
+                  aria-checked={i === 0 ? 'true' : 'false'}
+                >
+                  <div class="store-cabin-card__visual" aria-hidden="true">
+                    <img
+                      src={opt.id === 'personal' ? '/images/tienda-assets/bag-personal.svg' : '/images/tienda-assets/bag-cabin.svg'}
+                      alt=""
+                      width="79"
+                      height="63"
+                    />
+                  </div>
+                  <div class="store-cabin-card__copy">
+                    <strong>{opt.title}</strong>
+                    {opt.subtitle ? <span>{opt.subtitle}</span> : null}
+                  </div>
+                  <div class="store-cabin-card__foot">
+                    <span class="store-radio" aria-hidden="true"></span>
+                    <span>{opt.priceLabel}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="store-block">
+            <div class="store-block__head">¿Agregas equipaje de bodega?</div>
+            <div class="store-hold-row">
+              <div class="store-hold-row__left">
+                <img src="/images/tienda-assets/bag-hold.svg" alt="" width="40" height="53" />
+                <div>
+                  <strong>{holdBagKg} kg</strong>
+                  <span>USD {holdBagPrice.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+              <div class="store-qty" data-qty>
+                <button type="button" class="store-qty__btn" id="store-hold-minus" aria-label="Eliminar un equipaje de bodega de 23 kg" disabled>−</button>
+                <span id="store-hold-count">0</span>
+                <button type="button" class="store-qty__btn store-qty__btn--add" id="store-hold-plus" aria-label="Agregar un equipaje de bodega de 23 kg">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="store-special-wrap" id="store-special-wrap">
+            <button type="button" class="store-special" id="store-special-toggle" aria-expanded="false">
+              <span class="store-special__left">
+                <img src="/images/tienda-assets/bag-special.svg" alt="" width="40" height="40" />
+                <span>
+                  <strong>Equipaje especial</strong>
+                  <small>Deportivo, musical y audiovisual</small>
+                </span>
+              </span>
+              <svg class="store-special__chev" viewBox="0 0 32 32" width="16" height="16" aria-hidden="true"><path fill="#e8114b" d="M27.55 7.77 16 19.36 4.45 7.77 2 10.22 16 24.22 30 10.22 27.55 7.77Z"/></svg>
+            </button>
+            <div class="store-special__panel hidden" id="store-special-panel" hidden>
+              <div class="store-special__offer">
+                <strong class="store-special__price">USD {specialBagPrice.toFixed(2).replace('.', ',')}</strong>
+                <div class="store-qty" data-qty>
+                  <button type="button" class="store-qty__btn" id="store-special-minus" aria-label="Eliminar un equipaje especial" disabled>−</button>
+                  <span id="store-special-count">0</span>
+                  <button type="button" class="store-qty__btn store-qty__btn--add" id="store-special-plus" aria-label="Agregar un equipaje especial">+</button>
+                </div>
+              </div>
+              <a
+                class="store-special__link"
+                href="https://www.latamairlines.com/ec/es/experiencia-latam/equipaje"
+                target="_blank"
+                rel="noopener"
+              >
+                Ver características
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M9.5 2H14v4.5h-1.5V4.56L7.53 9.53 6.47 8.47l4.97-4.97H9.5V2zM3 3.5h4V5H4.5v6.5H11V9H12.5v4.5h-9V3.5z"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <div class="store-info">
+            <p><strong>Equipaje en cabina:</strong> podría ser enviado a bodega si no hay espacio en cabina, al momento de embarcar.</p>
+            <p><strong>Equipaje de bodega:</strong> pagarás un costo extra si supera el peso máximo que compraste. Asegúrate de agregar el equipaje necesario. <a href="https://www.latamairlines.com/ec/es/experiencia-latam/equipaje" target="_blank" rel="noopener">Más información</a></p>
+          </div>
+
+          <a class="store-link" href="https://www.latamairlines.com/ec/es/experiencia-latam/equipaje" target="_blank" rel="noopener">Revisa las medidas y condiciones de tu equipaje →</a>
+
+          <div class="store-note">
+            Si necesitas acceder al beneficio de equipaje gratis asociado a tu categoría o tarjeta de crédito, agrega tu número de pasajero frecuente en los datos del pasajero.
+          </div>
+
+          <button type="button" class="store-next-service" id="store-next-service">Ir al siguiente servicio</button>
+        </div>
+      </article>
+
+      <article class="store-accordion" data-section="cars">
+        <button type="button" class="store-accordion__head" data-accordion-toggle="cars" aria-expanded="false">
+          <span class="store-accordion__label">
+            <svg class="store-accordion__ico" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M7 20h18l-1.5-6H8.5L7 20zm2.5-8h13l1.2 4.8H8.3L9.5 12zM9 22a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm14 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+            Carro
+            <span class="store-badge">Nuevo</span>
+          </span>
+          <span class="store-accordion__meta">
+            <span class="store-step-pill">2 de 2</span>
+            <svg class="store-accordion__chev" viewBox="0 0 32 32" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M27.55 7.77 16 19.36 4.45 7.77 2 10.22 16 24.22 30 10.22 27.55 7.77Z"/></svg>
+          </span>
+        </button>
+
+        <div class="store-accordion__body" id="store-cars-body" hidden>
+          <div class="store-cars-banner">
+            <div class="store-cars-banner__copy">
+              <span class="store-badge store-badge--light">Nuevo</span>
+              <p class="store-cars-banner__kicker">¡Reserva TU COCHE AHORA!</p>
+              <h3>Asegura el precio antes de que suba <strong>PAGA SOLO AL RECOGER</strong></h3>
+              <p class="store-cars-banner__sub">Sin ningún cargo en tu tarjeta si cambias de opinión</p>
+            </div>
+          </div>
+
+          <div class="store-cars-search">
+            <div class="store-cars-search__info">
+              <strong id="store-cars-place">Aeropuerto de destino</strong>
+              <span id="store-cars-dates">Fechas del viaje</span>
+              <span>Edad del conductor 30 - 69</span>
+            </div>
+            <button type="button" class="store-cars-edit" id="store-cars-edit">Editar</button>
+          </div>
+
+          <div class="store-cars-grid" id="store-cars-grid">
+            {storeCars.map((car) => (
+              <article class="store-car-card" data-car={car.id}>
+                <h4>{car.name} <span>o similar</span></h4>
+                <img src={car.image} alt={`${car.name} image`} width="240" height="150" loading="lazy" />
+                <div class="store-car-card__specs">
+                  <span>{car.seats} asientos</span>
+                  <span>{car.bags} maletas</span>
+                  <span>{car.transmission}</span>
+                </div>
+                <div class="store-car-card__miles">Acumula {car.miles.toLocaleString('es-EC')} Millas LATAM Pass</div>
+                <img class="store-car-card__vendor" src={car.vendorLogo} alt={`Logotipo de ${car.vendor}`} height="20" />
+                <strong class="store-car-card__price">USD {car.price.toFixed(2).replace('.', ',')}</strong>
+                <button type="button" class="store-car-card__cta" data-car-detail={car.id}>Ver detalle</button>
+              </article>
+            ))}
+          </div>
+
+          <div class="store-cars-foot">
+            <div>
+              <p>Compara vehículos y encuentra la mejor oferta para tu viaje</p>
+              <div class="store-partners">
+                {carPartners.map((p) => (
+                  <img src={p.logo} alt={`Logotipo de ${p.name}`} height="18" />
+                ))}
+              </div>
+            </div>
+            <div class="store-cars-pager">
+              <button type="button" disabled aria-label="Anterior">‹</button>
+              <span>1 / 34</span>
+              <button type="button" aria-label="Siguiente">›</button>
+              <button type="button" class="store-link-btn" id="store-all-cars">Ver todos los autos</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <aside class="store-aside" id="store-bar" aria-label="Resumen y confirmación de la compra.">
+    <div class="store-aside__spacer" aria-hidden="true"></div>
+    <div class="store-aside__footer">
+      <button type="button" class="store-bar__price" id="store-price-toggle" aria-expanded="false">
+        <span>Precio final</span>
+        <strong id="store-final-price">USD 0,00</strong>
+      </button>
+      <button type="button" class="checkout-continue store-bar__cta" id="store-next-step">Ir al siguiente paso</button>
+    </div>
+  </aside>
+</div>
+
+<div class="store-car-modal hidden" id="store-car-modal" hidden>
+  <button type="button" class="store-car-modal__backdrop" id="store-car-modal-backdrop" aria-label="Cerrar detalle"></button>
+  <div class="store-car-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="store-car-modal-title">
+    <header class="store-car-modal__head">
+      <h2 id="store-car-modal-title">Detalle del vehículo</h2>
+      <button type="button" class="store-car-modal__close" id="store-car-modal-close" aria-label="Cerrar">×</button>
+    </header>
+    <div class="store-car-modal__body" id="store-car-modal-body"></div>
+    <footer class="store-car-modal__foot">
+      <button type="button" class="checkout-continue store-car-modal__cta" id="store-car-modal-select">Seleccionar este auto</button>
+    </footer>
+  </div>
+</div>
+
+<script define:vars={{ carsJson, cabinJson, holdBagPrice, specialBagPrice }}>
+  const STORAGE_KEY = 'latam-checkout-selection';
+  const SEATS_KEY = 'latam-seat-selection';
+  const STORE_KEY = 'latam-store-selection';
+  const cars = JSON.parse(carsJson);
+  const cabinOpts = JSON.parse(cabinJson);
+
+  function money(value) {
+    return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+  }
+
+  function readJson(key, fallback) {
+    try {
+      return JSON.parse(sessionStorage.getItem(key) || 'null') ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function tripBase(selection) {
+    const out = Number(selection?.outbound?.price || 0);
+    const back = Number(selection?.inbound?.price || 0);
+    const pax = Math.max(1, (selection?.adults || 0) + (selection?.children || 0) + (selection?.infants || 0));
+    return (out + back) * pax;
+  }
+
+  function seatExtras(seats, selection) {
+    let total = 0;
+    if (seats?.outbound?.price) total += Number(seats.outbound.price);
+    if (selection?.trip === 'roundtrip' && seats?.inbound?.price) total += Number(seats.inbound.price);
+    return total;
+  }
+
+  const selection = readJson(STORAGE_KEY, null);
+  const seats = readJson(SEATS_KEY, { outbound: null, inbound: null });
+  const state = readJson(STORE_KEY, {
+    cabin: 'personal',
+    holdCount: 0,
+    specialCount: 0,
+    sameAllFlights: true,
+    selectedCarId: null,
+    selectedCarPrice: 0,
+  });
+  if (typeof state.specialCount !== 'number') state.specialCount = 0;
+  if (state.selectedCarId === undefined) state.selectedCarId = null;
+  if (typeof state.selectedCarPrice !== 'number') state.selectedCarPrice = 0;
+
+  let currentSection = 'baggage';
+  let detailCarId = null;
+
+  const board = document.getElementById('store-board');
+  if (!selection?.outbound) {
+    board.innerHTML = '<p class="checkout-lead">No encontramos tu selección de vuelos. Vuelve a elegir tus tarifas.</p>';
+  } else {
+    const adults = Math.max(1, selection.adults || 1);
+    const paxChip = document.getElementById('store-pax-chip');
+    if (paxChip) {
+      paxChip.innerHTML = `Adulto 1 <span>Pasajero (1 de ${adults + (selection.children || 0)})</span>`;
+    }
+
+    const placeEl = document.getElementById('store-cars-place');
+    const datesEl = document.getElementById('store-cars-dates');
+    if (placeEl) {
+      placeEl.textContent = `Aeropuerto · ${selection.to?.city || selection.to?.code || 'Destino'}`;
+    }
+    if (datesEl) {
+      const d1 = selection.depart || '';
+      const d2 = selection.returnDate || selection.depart || '';
+      datesEl.textContent = `${d1}${selection.trip === 'roundtrip' && d2 ? ` - ${d2}` : ''}`;
+    }
+
+    function bagExtras() {
+      const cabin = cabinOpts.find((c) => c.id === state.cabin);
+      return (
+        Number(cabin?.price || 0) +
+        Number(state.holdCount || 0) * holdBagPrice +
+        Number(state.specialCount || 0) * specialBagPrice
+      );
+    }
+
+    function carExtras() {
+      if (!state.selectedCarId) return 0;
+      return Number(state.selectedCarPrice || cars.find((c) => c.id === state.selectedCarId)?.price || 0);
+    }
+
+    function updateTotals() {
+      const total = tripBase(selection) + seatExtras(seats, selection) + bagExtras() + carExtras();
+      const el = document.getElementById('store-final-price');
+      if (el) el.textContent = money(total);
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    function syncCarCards() {
+      document.querySelectorAll('.store-car-card').forEach((card) => {
+        const selected = card.dataset.car === state.selectedCarId;
+        card.classList.toggle('is-selected', selected);
+        const cta = card.querySelector('[data-car-detail]');
+        if (cta) cta.textContent = selected ? 'Seleccionado' : 'Ver detalle';
+      });
+    }
+
+    function closeCarModal() {
+      const modal = document.getElementById('store-car-modal');
+      modal?.classList.add('hidden');
+      modal?.setAttribute('hidden', '');
+      document.body.classList.remove('is-store-car-modal-open');
+      detailCarId = null;
+    }
+
+    function openCarModal(carId) {
+      const car = cars.find((c) => c.id === carId);
+      const body = document.getElementById('store-car-modal-body');
+      const modal = document.getElementById('store-car-modal');
+      const selectBtn = document.getElementById('store-car-modal-select');
+      if (!car || !body || !modal) return;
+      detailCarId = car.id;
+      const transmission = car.transmission === 'A' ? 'Automática' : 'Manual';
+      body.innerHTML = `
+        <div class="store-car-modal__hero">
+          <img src="${car.image}" alt="${car.name}" width="360" height="200" />
+          <img class="store-car-modal__vendor" src="${car.vendorLogo}" alt="${car.vendor}" height="22" />
+        </div>
+        <p class="store-car-modal__cat">${car.category}</p>
+        <h3>${car.name} <span>o similar</span></h3>
+        <div class="store-car-modal__specs">
+          <span>${car.seats} asientos</span>
+          <span>${car.bags} maletas</span>
+          <span>${car.doors} puertas</span>
+          <span>${transmission}</span>
+          <span>${car.fuel}</span>
+        </div>
+        <div class="store-car-modal__miles">Acumula ${Number(car.miles).toLocaleString('es-EC')} Millas LATAM Pass</div>
+        <strong class="store-car-modal__price">${money(car.price)}</strong>
+        <p class="store-car-modal__pay">Paga solo al recoger · Sin cargo si cancelas a tiempo</p>
+        <ul class="store-car-modal__includes">
+          ${(car.includes || []).map((item) => `<li>${item}</li>`).join('')}
+        </ul>
+      `;
+      if (selectBtn) {
+        selectBtn.textContent = state.selectedCarId === car.id ? 'Quitar selección' : 'Seleccionar este auto';
+      }
+      modal.classList.remove('hidden');
+      modal.removeAttribute('hidden');
+      document.body.classList.add('is-store-car-modal-open');
+    }
+
+    function syncCabinUI() {
+      document.querySelectorAll('.store-cabin-card').forEach((card) => {
+        const selected = card.dataset.cabin === state.cabin;
+        card.classList.toggle('is-selected', selected);
+        card.setAttribute('aria-checked', selected ? 'true' : 'false');
+      });
+    }
+
+    function syncHoldUI() {
+      const countEl = document.getElementById('store-hold-count');
+      const minus = document.getElementById('store-hold-minus');
+      if (countEl) countEl.textContent = String(state.holdCount);
+      if (minus) minus.disabled = state.holdCount <= 0;
+    }
+
+    function syncSpecialUI() {
+      const countEl = document.getElementById('store-special-count');
+      const minus = document.getElementById('store-special-minus');
+      if (countEl) countEl.textContent = String(state.specialCount);
+      if (minus) minus.disabled = state.specialCount <= 0;
+    }
+
+    function syncCta() {
+      const cta = document.getElementById('store-next-step');
+      if (!cta) return;
+      cta.textContent = currentSection === 'baggage' ? 'Ir al siguiente servicio' : 'Ir al siguiente paso';
+    }
+
+    function openSection(id) {
+      currentSection = id;
+      document.querySelectorAll('.store-accordion').forEach((acc) => {
+        const open = acc.dataset.section === id;
+        acc.classList.toggle('is-open', open);
+        const body = acc.querySelector('.store-accordion__body');
+        const btn = acc.querySelector('[data-accordion-toggle]');
+        if (body) {
+          if (open) body.removeAttribute('hidden');
+          else body.setAttribute('hidden', '');
+        }
+        btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      syncCta();
+      if (id === 'cars') {
+        document.getElementById('store-cars-body')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function goPassengers() {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(state));
+      const search = selection.search || '';
+      const qs = search.startsWith('?') ? search : search ? `?${search}` : '';
+      window.location.href = `/pasajeros${qs}`;
+    }
+
+    document.querySelectorAll('[data-accordion-toggle]').forEach((btn) => {
+      btn.addEventListener('click', () => openSection(btn.dataset.accordionToggle));
+    });
+
+    document.getElementById('store-next-service')?.addEventListener('click', () => openSection('cars'));
+
+    document.getElementById('store-next-step')?.addEventListener('click', () => {
+      if (currentSection === 'baggage') {
+        openSection('cars');
+        return;
+      }
+      goPassengers();
+    });
+
+    document.getElementById('store-same-flights')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      state.sameAllFlights = !state.sameAllFlights;
+      btn.classList.toggle('is-on', state.sameAllFlights);
+      btn.setAttribute('aria-pressed', state.sameAllFlights ? 'true' : 'false');
+      updateTotals();
+    });
+
+    document.getElementById('store-cabin-options')?.addEventListener('click', (e) => {
+      const card = e.target.closest('.store-cabin-card');
+      if (!card) return;
+      state.cabin = card.dataset.cabin;
+      syncCabinUI();
+      updateTotals();
+    });
+
+    document.getElementById('store-hold-plus')?.addEventListener('click', () => {
+      state.holdCount = Math.min(5, state.holdCount + 1);
+      syncHoldUI();
+      updateTotals();
+    });
+    document.getElementById('store-hold-minus')?.addEventListener('click', () => {
+      state.holdCount = Math.max(0, state.holdCount - 1);
+      syncHoldUI();
+      updateTotals();
+    });
+
+    document.getElementById('store-special-toggle')?.addEventListener('click', () => {
+      const panel = document.getElementById('store-special-panel');
+      const btn = document.getElementById('store-special-toggle');
+      const wrap = document.getElementById('store-special-wrap');
+      const open = panel?.classList.contains('hidden');
+      panel?.classList.toggle('hidden', !open);
+      wrap?.classList.toggle('is-open', !!open);
+      if (open) panel?.removeAttribute('hidden');
+      else panel?.setAttribute('hidden', '');
+      btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    document.getElementById('store-special-plus')?.addEventListener('click', () => {
+      state.specialCount = Math.min(5, state.specialCount + 1);
+      syncSpecialUI();
+      updateTotals();
+    });
+    document.getElementById('store-special-minus')?.addEventListener('click', () => {
+      state.specialCount = Math.max(0, state.specialCount - 1);
+      syncSpecialUI();
+      updateTotals();
+    });
+
+    document.getElementById('store-cars-grid')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-car-detail]');
+      if (!btn) return;
+      openCarModal(btn.dataset.carDetail);
+    });
+
+    document.getElementById('store-car-modal-close')?.addEventListener('click', closeCarModal);
+    document.getElementById('store-car-modal-backdrop')?.addEventListener('click', closeCarModal);
+    document.getElementById('store-car-modal-select')?.addEventListener('click', () => {
+      if (!detailCarId) return;
+      if (state.selectedCarId === detailCarId) {
+        state.selectedCarId = null;
+        state.selectedCarPrice = 0;
+      } else {
+        const car = cars.find((c) => c.id === detailCarId);
+        state.selectedCarId = detailCarId;
+        state.selectedCarPrice = Number(car?.price || 0);
+      }
+      syncCarCards();
+      updateTotals();
+      closeCarModal();
+    });
+
+    document.getElementById('store-all-cars')?.addEventListener('click', () => {
+      openCarModal(cars[0]?.id);
+    });
+
+    openSection('baggage');
+    syncCabinUI();
+    syncHoldUI();
+    syncSpecialUI();
+    syncCarCards();
+    updateTotals();
+  }
+</script>

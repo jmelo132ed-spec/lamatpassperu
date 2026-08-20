@@ -3,25 +3,13 @@ export const prerender = false;
 
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import OffersSearchBar from '../components/offers/OffersSearchBar.astro';
 import PassengerBoard from '../components/checkout/PassengerBoard.astro';
 import { getHomePageData } from '../services/api';
-import { parseOffersQuery, passengerLabel, prettyDate } from '../services/searchQuery';
 
 const home = await getHomePageData();
-const query = parseOffersQuery(Astro.url.searchParams);
-const origin = query.origin;
-const destination = query.destination;
-const from = home.cities.find((c) => c.code === origin) ?? { city: origin || 'Origen', code: origin || '—' };
-const to = home.cities.find((c) => c.code === destination) ?? { city: destination || 'Destino', code: destination || '—' };
-const depart = query.depart;
-const returnDate = query.returnDate;
-const datesLabel = query.trip === 'oneway'
-  ? prettyDate(depart)
-  : [prettyDate(depart), prettyDate(returnDate)].filter(Boolean).join(' - ');
 ---
 
-<Layout title="Datos de pasajeros | LATAM Ecuador" bodyClass="is-checkout-page">
+<Layout title="Pasajeros | Compra | LATAM Airlines" bodyClass="is-passengers-page">
   <Header
     variant="offers"
     discover={home.discoverMenu}
@@ -31,23 +19,27 @@ const datesLabel = query.trip === 'oneway'
     passHref={home.headerLinks.pass.href}
     loginHref={home.headerLinks.login.href}
   />
-
-  <OffersSearchBar
-    fromCity={from.city}
-    fromCode={from.code}
-    toCity={to.city}
-    toCode={to.code}
-    datesLabel={datesLabel}
-    paxLabel={passengerLabel(Number(query.adults), Number(query.children), Number(query.infants))}
-    passengers={Number(query.adults) + Number(query.children) + Number(query.infants)}
-    cabin={query.cabin}
-    tripLabel={query.trip === 'oneway' ? 'Solo ida' : 'Ida y vuelta'}
-    startOpen={false}
-  />
-
-  <div class="checkout-scroll">
-    <main class="checkout-main">
+  <div class="pax-scroll">
+    <main class="pax-main">
       <PassengerBoard />
     </main>
+    <footer class="pax-page-footer">
+      <div class="pax-page-footer__left">
+        <img class="pax-page-footer__latam" src="/images/logo-positive.svg" alt="LATAM Airlines" width="105" height="32" />
+        <p>© 2026 LATAM Airlines Ecuador</p>
+      </div>
+      <div class="pax-page-footer__right">
+        <span>Certificado por:</span>
+        <a
+          class="pax-page-footer__pci"
+          href="https://www.pcisecuritystandards.org/"
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          title="PCI"
+        >
+          <img src="/images/pci-dss.png" alt="PCI DSS" width="40" height="40" />
+        </a>
+      </div>
+    </footer>
   </div>
 </Layout>

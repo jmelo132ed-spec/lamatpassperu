@@ -90,9 +90,9 @@
     return `/ofertas-vuelos${qs}`;
   }
 
-  function passengersHref(selection) {
+  function seatsHref(selection) {
     const qs = selection.search?.startsWith('?') ? selection.search : `?${selection.search || ''}`;
-    return `/pasajeros${qs}`;
+    return `/seleccion-asientos${qs}`;
   }
 
   function legBlock(fromCity, toCity, dateIso, leg, fromCode, toCode, offersUrl) {
@@ -153,7 +153,7 @@
     const perPerson = Number(selection.outbound?.price || 0) + Number(selection.inbound?.price || 0);
     const parts = splitPrice(perPerson);
     const offersUrl = offersHref(selection);
-    const nextUrl = passengersHref(selection);
+    const nextUrl = seatsHref(selection);
 
     contentRoot.innerHTML = `
       ${legBlock(selection.from.city, selection.to.city, selection.depart, selection.outbound, selection.from.code, selection.to.code, offersUrl)}
