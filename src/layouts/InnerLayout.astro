@@ -1,0 +1,31 @@
+---
+import Layout from './Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getHomePageData } from '../services/api';
+
+interface Props {
+  title: string;
+  heading?: string;
+}
+const data = await getHomePageData();
+const { title, heading = title } = Astro.props;
+---
+
+<Layout title={`${title} | LATAM Ecuador`}>
+  <Header
+    discover={data.discoverMenu}
+    trips={data.tripsMenu}
+    helpHref={data.headerLinks.help.href}
+    flightStatusHref={data.headerLinks.flightStatus.href}
+    passHref={data.headerLinks.pass.href}
+    loginHref={data.headerLinks.login.href}
+  />
+  <main class="page-main">
+    <div class="container-latam">
+      <h1>{heading}</h1>
+      <slot />
+    </div>
+  </main>
+  <Footer columns={data.footerColumns} socials={data.socials} />
+</Layout>

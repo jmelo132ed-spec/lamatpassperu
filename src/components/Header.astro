@@ -1,0 +1,158 @@
+---
+import type { NavLink } from '../data/mockData';
+import ExperienceModal from './ExperienceModal.astro';
+
+interface Props {
+  discover: NavLink[];
+  trips: NavLink[];
+  helpHref: string;
+  flightStatusHref: string;
+  passHref: string;
+  loginHref: string;
+  variant?: 'default' | 'offers';
+}
+
+const { discover, trips, helpHref, flightStatusHref, passHref, loginHref, variant = 'default' } = Astro.props;
+const compact = variant === 'offers';
+---
+
+<header class:list={['site-header', compact && 'site-header--offers']} id="site-header">
+  <div class="site-header__inner">
+    <a class="site-header__logo" href="/" aria-label="Ir al inicio del sitio.">
+      <img src="/images/logo-header.svg" alt="Latam Ecuador" />
+    </a>
+
+    {!compact && (
+    <nav class="site-header__nav" aria-label="Navegación de secciones de usuario.">
+      <div class="nav-wrap">
+        <button class="nav-btn" type="button" data-menu="discover" aria-expanded="false">
+          Descubre
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M8.167 4.45 19.2 16 8.167 27.55 10.5 30 23.834 16 10.5 2 8.167 4.45Z" fill="currentColor"></path>
+          </svg>
+        </button>
+        <div class="dropdown hidden" id="menu-discover" role="menu">
+          {discover.map((item) => (
+            <a href={item.href} role="menuitem">
+              <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M16 2 2 9v14l14 7 14-7V9L16 2Z" stroke="#1a4bdb" stroke-width="2" fill="none"></path>
+              </svg>
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div class="nav-wrap">
+        <button class="nav-btn" type="button" data-menu="trips" aria-expanded="false">
+          Mis viajes
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M8.167 4.45 19.2 16 8.167 27.55 10.5 30 23.834 16 10.5 2 8.167 4.45Z" fill="currentColor"></path>
+          </svg>
+        </button>
+        <div class="dropdown hidden" id="menu-trips" role="menu">
+          {trips.map((item) => (
+            <a href={item.href} role="menuitem">{item.label}</a>
+          ))}
+        </div>
+      </div>
+
+      <a class="nav-link" href={helpHref}>Centro de ayuda</a>
+    </nav>
+    )}
+
+    <div class="site-header__right">
+      {!compact && (
+      <>
+      <a class="util-link" href={flightStatusHref}>Estado de vuelo</a>
+      <a class="util-link" href={passHref} target="_blank" rel="noreferrer">
+        LATAM Pass
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M29.334 2.375v11.2h-2.667V7.107L13.84 20.575l-1.84-1.932L24.827 5.175H18.667v-2.8h10.667ZM13.334 2.375v2.8H5.334v22.4h21.333v-8.4h2.667v11.2H2.667V2.375h10.667Z" fill="currentColor"></path>
+        </svg>
+      </a>
+      </>
+      )}
+
+      <div class="nav-wrap">
+        <button class="currency-btn" type="button" id="open-experience" aria-label="USD · $ Dólares americanos">
+          <span class="flag-ec" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32">
+              <g clip-path="url(#ec-flag-clip)">
+                <path d="M0 5.334H32V26.666H0V5.334Z" fill="#FFDA44"></path>
+                <path d="M0 16.003H32V21.334H0V16.003Z" fill="#0052B4"></path>
+                <path d="M0 21.334H32V26.666H0V21.334Z" fill="#D80027"></path>
+                <path d="M16 19.716a3.713 3.713 0 1 0 0-7.425 3.713 3.713 0 0 0 0 7.425Z" fill="#FFDA44"></path>
+                <path d="M23.075 10.328s-1.7-.862-2.119-1c-.418-.137-3.068-.825-3.068-.437 0 .643-.844.75-.969.75s0-.332-.8-.332c-.8 0-.856.3-.987.3-.138 0-.906-.063-.906-.719 0-.325-2.681.25-3.069.438C10.65 9.522 8.913 10.328 8.913 10.328s2.862.169 3.368.388c.507.218 2.738 1.03 2.738 1.03l-.175.832h2.362l-.237-.832s2.193-.794 2.737-1.031c.544-.238 3.369-.387 3.369-.387Z" fill="#4C1F00"></path>
+                <path d="M13.606 16.066a2.394 2.394 0 0 0 4.788 0v-.719h-4.781v.719Z" fill="#57BA17"></path>
+                <path d="M16 12.241a2.394 2.394 0 0 0-2.394 2.393v.719h4.781v-.719A2.394 2.394 0 0 0 16 12.241Z" fill="#338AF3"></path>
+              </g>
+              <defs><clipPath id="ec-flag-clip"><rect width="32" height="32" fill="white"></rect></clipPath></defs>
+            </svg>
+          </span>
+          <span>
+            <strong>USD · $</strong>
+            <small>Dólares americanos</small>
+          </span>
+        </button>
+      </div>
+
+      <a class="login-chip" href={loginHref} aria-label="Ingresar a mi cuenta LATAM. Iniciar sesión">Iniciar sesión</a>
+      {!compact && (
+      <button class="menu-btn" type="button" data-menu="mobile" aria-label="Abrir menú.">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32" fill="none">
+          <path d="M2 4.125v3.5h28v-3.5H2Zm0 14h28v-3.5H2v3.5Zm0 10.5h28v-3.5H2v3.5Z" fill="currentColor"></path>
+        </svg>
+      </button>
+      )}
+    </div>
+  </div>
+
+  {!compact && (
+  <div class="dropdown hidden" id="menu-mobile" role="menu" style="left:16px;right:16px;width:auto;">
+    <a href="/ofertas">Ofertas</a>
+    <a href="/destinos">Destinos</a>
+    <a href="/mis-viajes">Mis viajes</a>
+    <a href="/check-in">Check-in</a>
+    <a href={helpHref}>Centro de ayuda</a>
+    <a href={loginHref}>Iniciar sesión</a>
+  </div>
+  )}
+</header>
+<ExperienceModal />
+<div class="dropdown-backdrop hidden" id="nav-backdrop"></div>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.nav-btn[data-menu], .menu-btn[data-menu]');
+  const backdrop = document.getElementById('nav-backdrop');
+
+  function closeAll() {
+    document.querySelectorAll('.dropdown').forEach((el) => el.classList.add('hidden'));
+    buttons.forEach((b) => {
+      b.classList.remove('is-open');
+      b.setAttribute('aria-expanded', 'false');
+    });
+    backdrop?.classList.add('hidden');
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = `menu-${btn.dataset.menu}`;
+      const menu = document.getElementById(id);
+      const wasOpen = menu && !menu.classList.contains('hidden');
+      closeAll();
+      if (!wasOpen && menu) {
+        menu.classList.remove('hidden');
+        btn.classList.add('is-open');
+        btn.setAttribute('aria-expanded', 'true');
+        backdrop?.classList.remove('hidden');
+      }
+    });
+  });
+
+  backdrop?.addEventListener('click', closeAll);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAll();
+  });
+</script>

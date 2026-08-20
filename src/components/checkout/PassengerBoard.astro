@@ -1,0 +1,237 @@
+---
+import CheckoutStepper from './CheckoutStepper.astro';
+---
+
+<section class="checkout-board">
+  <CheckoutStepper />
+  <div class="checkout-board__grid">
+    <div class="checkout-board__main">
+      <h1 class="checkout-title">Ingresa los <strong>datos de los pasajeros</strong></h1>
+      <p class="checkout-lead hidden" id="checkout-error" hidden></p>
+      <div id="passenger-forms"></div>
+
+      <section class="checkout-contact">
+        <h2>Información de contacto</h2>
+        <p class="checkout-contact__hint">Te enviaremos la confirmación de compra y actualizaciones del viaje a este correo.</p>
+        <div class="checkout-fields">
+          <label class="checkout-field">
+            <span>Correo electrónico</span>
+            <input type="email" id="contact-email" autocomplete="email" required placeholder="nombre@correo.com" />
+          </label>
+          <label class="checkout-field">
+            <span>Confirmar correo electrónico</span>
+            <input type="email" id="contact-email-confirm" autocomplete="email" required placeholder="nombre@correo.com" />
+          </label>
+          <label class="checkout-field">
+            <span>Teléfono</span>
+            <div class="checkout-phone">
+              <select id="contact-phone-code" aria-label="Código de país">
+                <option value="+593">+593</option>
+                <option value="+57">+57</option>
+                <option value="+51">+51</option>
+                <option value="+56">+56</option>
+                <option value="+1">+1</option>
+              </select>
+              <input type="tel" id="contact-phone" autocomplete="tel-national" required placeholder="999999999" />
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <button type="button" class="checkout-continue checkout-continue--desktop" id="checkout-continue">Continuar</button>
+    </div>
+
+    <aside class="checkout-summary" id="checkout-summary" aria-live="polite"></aside>
+  </div>
+</section>
+
+<div class="checkout-mobile-bar hidden" id="checkout-mobile-bar" hidden>
+  <div class="checkout-mobile-bar__total">
+    <span>Total</span>
+    <strong id="checkout-mobile-total">USD 0,00</strong>
+  </div>
+  <button type="button" class="checkout-continue" id="checkout-continue-mobile">Continuar</button>
+</div>
+
+<script>
+  const STORAGE_KEY = 'latam-checkout-selection';
+  const formsRoot = document.getElementById('passenger-forms');
+  const summaryRoot = document.getElementById('checkout-summary');
+  const errorBox = document.getElementById('checkout-error');
+  const mobileBar = document.getElementById('checkout-mobile-bar');
+  const mobileTotal = document.getElementById('checkout-mobile-total');
+
+  function showError(message) {
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.classList.toggle('hidden', !message);
+    if (message) errorBox.removeAttribute('hidden');
+    else errorBox.setAttribute('hidden', '');
+  }
+
+  function money(value) {
+    return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+  }
+
+  function readSelection() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function passengerGroups(selection) {
+    const groups = [];
+    for (let i = 0; i < selection.adults; i += 1) groups.push({ type: 'Adulto', label: `Adulto ${i + 1}`, minAge: 12 });
+    for (let i = 0; i < selection.children; i += 1) groups.push({ type: 'Niño', label: `Niño ${i + 1}`, minAge: 2 });
+    for (let i = 0; i < selection.infants; i += 1) groups.push({ type: 'Bebé', label: `Bebé ${i + 1}`, minAge: 0 });
+    if (!groups.length) groups.push({ type: 'Adulto', label: 'Adulto 1', minAge: 12 });
+    return groups;
+  }
+
+  function legCard(title, leg, fromCode, toCode) {
+    if (!leg?.flight) return '';
+    const next = leg.flight.arriveNextDay ? '<sup class="checkout-leg__next">+1</sup>' : '';
+    return `
+      <article class="checkout-leg">
+        <h3>${title}</h3>
+        <p class="checkout-leg__meta">${leg.fareName || 'Tarifa'} · ${leg.flight.stops || 'Directo'}</p>
+        <div class="checkout-leg__row">
+          <div><strong>${leg.flight.depart}</strong><span>${fromCode}</span></div>
+          <div class="checkout-leg__path"><i></i><span>${leg.flight.duration}</span><i></i></div>
+          <div><strong>${leg.flight.arrive}${next}</strong><span>${toCode}</span></div>
+        </div>
+        <p class="checkout-leg__price">${money(leg.price)} <small>por pasajero</small></p>
+      </article>
+    `;
+  }
+
+  function renderSummary(selection) {
+    const pax = selection.adults + selection.children + selection.infants;
+    const perPerson = Number(selection.outbound?.price || 0) + Number(selection.inbound?.price || 0);
+    const total = perPerson * (pax || 1);
+    const html = `
+      <div class="checkout-summary__card">
+        <h2>Resumen del viaje</h2>
+        <p class="checkout-summary__route">${selection.from.city} (${selection.from.code}) → ${selection.to.city} (${selection.to.code})</p>
+        ${legCard('Vuelo de ida', selection.outbound, selection.from.code, selection.to.code)}
+        ${selection.trip === 'roundtrip' && selection.inbound ? legCard('Vuelo de vuelta', selection.inbound, selection.to.code, selection.from.code) : ''}
+        <div class="checkout-summary__total">
+          <span>Total por ${pax} pasajero${pax === 1 ? '' : 's'}</span>
+          <strong>${money(total)}</strong>
+          <small>Incluye tasas e impuestos</small>
+        </div>
+      </div>
+    `;
+    summaryRoot.innerHTML = html;
+    if (mobileTotal) mobileTotal.textContent = money(total);
+    if (mobileBar) {
+      mobileBar.classList.remove('hidden');
+      mobileBar.removeAttribute('hidden');
+    }
+  }
+
+  function fieldHtml(id, label, type = 'text', extra = '') {
+    return `
+      <label class="checkout-field">
+        <span>${label}</span>
+        <input type="${type}" id="${id}" name="${id}" required ${extra} />
+      </label>
+    `;
+  }
+
+  function renderForms(selection) {
+    const groups = passengerGroups(selection);
+    formsRoot.innerHTML = groups.map((group, index) => `
+      <section class="checkout-passenger" data-passenger="${index}">
+        <header class="checkout-passenger__head">
+          <h2>${group.label}</h2>
+          <span>${group.type}</span>
+        </header>
+        <div class="checkout-fields checkout-fields--two">
+          ${fieldHtml(`p${index}-first`, 'Nombres')}
+          ${fieldHtml(`p${index}-last`, 'Apellidos')}
+          <label class="checkout-field">
+            <span>Tipo de documento</span>
+            <select id="p${index}-doc-type" required>
+              <option value="">Selecciona</option>
+              <option value="CI">Cédula de identidad</option>
+              <option value="PP">Pasaporte</option>
+              <option value="CE">Cédula de extranjería</option>
+            </select>
+          </label>
+          ${fieldHtml(`p${index}-doc`, 'Número de documento')}
+          <label class="checkout-field">
+            <span>Nacionalidad</span>
+            <select id="p${index}-nationality" required>
+              <option value="">Selecciona</option>
+              <option value="EC" selected>Ecuador</option>
+              <option value="CO">Colombia</option>
+              <option value="PE">Perú</option>
+              <option value="CL">Chile</option>
+              <option value="AR">Argentina</option>
+              <option value="US">Estados Unidos</option>
+            </select>
+          </label>
+          ${fieldHtml(`p${index}-birth`, 'Fecha de nacimiento', 'date')}
+          <label class="checkout-field">
+            <span>Género</span>
+            <select id="p${index}-gender" required>
+              <option value="">Selecciona</option>
+              <option value="F">Femenino</option>
+              <option value="M">Masculino</option>
+              <option value="X">Prefiero no decir</option>
+            </select>
+          </label>
+        </div>
+      </section>
+    `).join('');
+  }
+
+  function validate() {
+    const selection = readSelection();
+    if (!selection) {
+      showError('No encontramos la selección de vuelos. Vuelve a elegir tus vuelos.');
+      return false;
+    }
+    const requiredIds = [...document.querySelectorAll('.checkout-board input[required], .checkout-board select[required]')];
+    for (const input of requiredIds) {
+      if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement)) continue;
+      if (!String(input.value || '').trim()) {
+        showError('Completa todos los campos obligatorios de pasajeros y contacto.');
+        input.focus();
+        return false;
+      }
+    }
+    const email = document.getElementById('contact-email');
+    const confirm = document.getElementById('contact-email-confirm');
+    if (email instanceof HTMLInputElement && confirm instanceof HTMLInputElement && email.value !== confirm.value) {
+      showError('Los correos electrónicos no coinciden.');
+      confirm.focus();
+      return false;
+    }
+    showError('');
+    return true;
+  }
+
+  function continueCheckout() {
+    if (!validate()) return;
+    sessionStorage.setItem('latam-passenger-draft', JSON.stringify({
+      savedAt: new Date().toISOString(),
+    }));
+    window.location.href = '/login';
+  }
+
+  document.getElementById('checkout-continue')?.addEventListener('click', continueCheckout);
+  document.getElementById('checkout-continue-mobile')?.addEventListener('click', continueCheckout);
+
+  const selection = readSelection();
+  if (!selection) {
+    showError('No encontramos tu selección de vuelos. Realiza una búsqueda y elige tus tarifas nuevamente.');
+  } else {
+    renderSummary(selection);
+    renderForms(selection);
+  }
+</script>
