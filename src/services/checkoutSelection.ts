@@ -36,9 +36,13 @@ export type CheckoutSelection = {
 
 export const CHECKOUT_STORAGE_KEY = 'latam-checkout-selection';
 
-export function totalCheckoutPrice(selection: CheckoutSelection) {
-  const out = Number(selection.outbound?.price || 0);
-  const back = Number(selection.inbound?.price || 0);
+export function totalCheckoutPrice(selection: CheckoutSelection, discountPercent = 0) {
+  const factor =
+    Number.isFinite(discountPercent) && discountPercent > 0
+      ? 1 - Math.min(100, discountPercent) / 100
+      : 1;
+  const out = Number(selection.outbound?.price || 0) * factor;
+  const back = Number(selection.inbound?.price || 0) * factor;
   const pax = selection.adults + selection.children + selection.infants;
-  return (out + back) * (pax || 1);
+  return Math.round((out + back) * (pax || 1) * 100) / 100;
 }

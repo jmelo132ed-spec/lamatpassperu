@@ -1,4 +1,5 @@
 ---
+import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
 ---
 
 <section class="trip-summary-board">
@@ -12,13 +13,14 @@
   <div id="trip-summary-content" aria-live="polite"></div>
 </section>
 
-<script>
+<script define:vars={{ PORCENTAJE_DESCUENTO }}>
   const STORAGE_KEY = 'latam-checkout-selection';
   const contentRoot = document.getElementById('trip-summary-content');
   const errorBox = document.getElementById('trip-summary-error');
   const badgeEl = document.getElementById('trip-summary-badge');
   const DAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+  const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function showError(message) {
     if (!errorBox) return;
@@ -30,6 +32,18 @@
 
   function money(value) {
     return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+  }
+
+  function ticketAfterDiscount(original) {
+    const base = Number(original) || 0;
+    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
+    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+  }
+
+  function ticketMoney(original) {
+    const before = Number(original) || 0;
+    if (!(discountPct > 0)) return money(before);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(ticketAfterDiscount(before))}</span></span>`;
   }
 
   function readSelection() {
@@ -135,7 +149,7 @@
             </div>
             <div class="trip-summary-card__fare">
               <span class="trip-summary-fare trip-summary-fare--${tone}">${leg.fareName || 'Tarifa'}</span>
-              <p>Precio por pasajero <strong>${money(leg.price)}</strong></p>
+              <p>Precio por pasajero <strong>${ticketMoney(leg.price)}</strong></p>
             </div>
             <div class="trip-summary-card__change">
               <a href="${offersUrl}">Cambiar tu selección</a>
@@ -150,8 +164,9 @@
     const trip = selection.trip === 'oneway' ? 'Solo ida' : 'Ida y vuelta';
     if (badgeEl) badgeEl.textContent = trip;
 
-    const perPerson = Number(selection.outbound?.price || 0) + Number(selection.inbound?.price || 0);
-    const parts = splitPrice(perPerson);
+    const perPersonBefore =
+      Number(selection.outbound?.price || 0) + Number(selection.inbound?.price || 0);
+    const partsBefore = splitPrice(perPersonBefore);
     const offersUrl = offersHref(selection);
     const nextUrl = seatsHref(selection);
 
@@ -163,11 +178,11 @@
       <section class="trip-summary-price">
         <div class="trip-summary-price__row">
           <span>Vuelos</span>
-          <strong>${money(parts.flights)}</strong>
+          <strong>${ticketMoney(partsBefore.flights)}</strong>
         </div>
         <div class="trip-summary-price__row">
           <span>Tasas, cargos e impuestos</span>
-          <strong>${money(parts.taxes)}</strong>
+          <strong>${ticketMoney(partsBefore.taxes)}</strong>
         </div>
         <div class="trip-summary-price__total">
           <div>
@@ -175,7 +190,7 @@
             <p class="trip-summary-price__hint">Por persona. Incluye tasas, cargos e impuestos.</p>
             <p class="trip-summary-price__note">Los precios podrían variar según disponibilidad de la tarifa al momento de comprar. El precio se confirmará al llegar al paso de pago.</p>
           </div>
-          <strong>${money(parts.total)}</strong>
+          <strong>${ticketMoney(partsBefore.total)}</strong>
         </div>
       </section>
       <div class="trip-summary-cta">

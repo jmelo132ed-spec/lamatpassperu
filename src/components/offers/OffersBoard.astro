@@ -1,5 +1,6 @@
 ---
 import OffersExtras from './OffersExtras.astro';
+import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
 
 interface Props {
   trip: string;
@@ -84,7 +85,7 @@ const { trip, search = '' } = Astro.props;
   </aside>
 </div>
 
-<script define:vars={{ trip, search }}>
+<script define:vars={{ trip, search, PORCENTAJE_DESCUENTO }}>
   const payload = { results: [], trip, from: { code: '', city: '', airport: '', country: '' }, to: { code: '', city: '', airport: '', country: '' }, depart: '', returnDate: '' };
   const list = document.getElementById('offers-list');
   const title = document.getElementById('offers-title');
@@ -94,6 +95,7 @@ const { trip, search = '' } = Astro.props;
   const errorBox = document.getElementById('offers-error');
   const emptyBox = document.getElementById('offers-empty');
   const state = { sort: 'recommended', stops: 'all', hours: 'all', step: 'outbound', outboundLeg: '', fare: '', outboundSelection: null };
+  const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function show(el, on) {
     el?.classList.toggle('hidden', !on);
@@ -103,6 +105,19 @@ const { trip, search = '' } = Astro.props;
 
   function money(value) {
     return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+  }
+
+  function ticketAfterDiscount(original) {
+    const base = Number(original) || 0;
+    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
+    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+  }
+
+  function ticketMoney(original) {
+    const before = Number(original) || 0;
+    if (!(discountPct > 0)) return money(before);
+    const after = ticketAfterDiscount(before);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(after)}</span></span>`;
   }
 
   function operatorMark(op) {
@@ -174,7 +189,7 @@ const { trip, search = '' } = Astro.props;
           <h3><i style="background:${fare.accent || '#10004f'}"></i>${fare.name}</h3>
           <ul>${(fare.perks || []).map((perk) => `<li>${perkIcon(perk.icon)}<span>${perk.label}</span></li>`).join('')}</ul>
           <div class="fare-col__pay">
-            <p class="fare-col__price">${money(fare.price)}</p>
+            <p class="fare-col__price">${ticketMoney(fare.price)}</p>
             ${extra}
             <small>Por pasajero Incluye tasas e impuestos</small>
             <button class="fare-col__more" type="button" data-fare-more="${fare.id}">Más detalles</button>
@@ -295,7 +310,7 @@ const { trip, search = '' } = Astro.props;
           ${operatorsHtml(flight)}
           <div class="flight-card__price">
             <span class="flight-card__price-from">Por persona desde</span>
-            <span class="flight-card__amount">${money(flight.price)}</span>
+            <span class="flight-card__amount">${ticketMoney(flight.price)}</span>
             <span class="flight-card__taxes">Incluye tasas e impuestos</span>
           </div>
         </div>

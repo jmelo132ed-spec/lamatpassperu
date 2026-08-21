@@ -1,5 +1,6 @@
 ---
 import { AIRCRAFT_LABEL, EMERGENCY_BEFORE_ROW, buildSeatRows, seatCategories } from '../../data/seatMap';
+import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
 
 const rows = buildSeatRows();
 const categoriesJson = JSON.stringify(seatCategories);
@@ -133,7 +134,7 @@ const rowsJson = JSON.stringify(rows);
   </div>
 </div>
 
-<script define:vars={{ categoriesJson, rowsJson, emergencyBefore: EMERGENCY_BEFORE_ROW, aircraftLabel: AIRCRAFT_LABEL }}>
+<script define:vars={{ categoriesJson, rowsJson, emergencyBefore: EMERGENCY_BEFORE_ROW, aircraftLabel: AIRCRAFT_LABEL, PORCENTAJE_DESCUENTO }}>
   const STORAGE_KEY = 'latam-checkout-selection';
   const SEATS_KEY = 'latam-seat-selection';
   const categories = JSON.parse(categoriesJson);
@@ -163,9 +164,27 @@ const rowsJson = JSON.stringify(rows);
   const exitPrice = document.getElementById('seats-exit-price');
   let openCategory = 'latam-plus';
   let pendingSeat = null;
+  const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
     return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+  }
+
+  function ticketAfterDiscount(original) {
+    const base = Number(original) || 0;
+    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
+    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+  }
+
+  function ticketMoney(original) {
+    const before = Number(original) || 0;
+    if (!(discountPct > 0)) return money(before);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(ticketAfterDiscount(before))}</span></span>`;
+  }
+
+  function totalMoney(before, after) {
+    if (!(discountPct > 0) || Math.abs(before - after) < 0.005) return money(after);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(after)}</span></span>`;
   }
 
   function readSelection() {
@@ -204,9 +223,11 @@ const rowsJson = JSON.stringify(rows);
     return groups;
   }
 
-  function tripBase(selection) {
-    const out = Number(selection.outbound?.price || 0);
-    const back = Number(selection.inbound?.price || 0);
+  function tripBase(selection, discounted = true) {
+    const outRaw = Number(selection.outbound?.price || 0);
+    const backRaw = Number(selection.inbound?.price || 0);
+    const out = discounted ? ticketAfterDiscount(outRaw) : outRaw;
+    const back = discounted ? ticketAfterDiscount(backRaw) : backRaw;
     const pax = Math.max(1, (selection.adults || 0) + (selection.children || 0) + (selection.infants || 0));
     return (out + back) * pax;
   }
@@ -239,10 +260,11 @@ const rowsJson = JSON.stringify(rows);
 
     const state = {
       legIndex: 0,
-      seats: readSeats(),
+      seats: { outbound: null, inbound: null },
       activePax: 0,
       passengers: passengerGroups(selection),
     };
+    saveSeats(state.seats);
 
     function currentLegId() {
       return legs[state.legIndex].id;
@@ -397,12 +419,14 @@ const rowsJson = JSON.stringify(rows);
     }
 
     function updateTotals() {
-      const base = tripBase(selection);
+      const baseBefore = tripBase(selection, false);
+      const base = tripBase(selection, true);
       const extras = seatExtras(state.seats, selection);
+      const totalBefore = baseBefore + extras;
       const total = base + extras;
-      finalPriceEl.textContent = money(total);
+      finalPriceEl.innerHTML = totalMoney(totalBefore, total);
       priceDetailEl.innerHTML = `
-        <div class="seats-price-detail__row"><span>Vuelos</span><strong>${money(base)}</strong></div>
+        <div class="seats-price-detail__row"><span>Vuelos</span><strong>${ticketMoney(baseBefore)}</strong></div>
         <div class="seats-price-detail__row"><span>Asientos</span><strong>${money(extras)}</strong></div>
       `;
       const last = state.legIndex >= legs.length - 1;

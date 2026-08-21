@@ -1,5 +1,6 @@
 ---
 import { cabinOptions, carPartners, holdBagKg, holdBagPrice, specialBagPrice, storeCars } from '../../data/storeData';
+import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
 
 const carsJson = JSON.stringify(storeCars);
 const cabinJson = JSON.stringify(cabinOptions);
@@ -232,15 +233,27 @@ const cabinJson = JSON.stringify(cabinOptions);
   </div>
 </div>
 
-<script define:vars={{ carsJson, cabinJson, holdBagPrice, specialBagPrice }}>
+<script define:vars={{ carsJson, cabinJson, holdBagPrice, specialBagPrice, PORCENTAJE_DESCUENTO }}>
   const STORAGE_KEY = 'latam-checkout-selection';
   const SEATS_KEY = 'latam-seat-selection';
   const STORE_KEY = 'latam-store-selection';
   const cars = JSON.parse(carsJson);
   const cabinOpts = JSON.parse(cabinJson);
+  const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
     return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+  }
+
+  function ticketAfterDiscount(original) {
+    const base = Number(original) || 0;
+    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
+    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+  }
+
+  function totalMoney(before, after) {
+    if (!(discountPct > 0) || Math.abs(before - after) < 0.005) return money(after);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(after)}</span></span>`;
   }
 
   function readJson(key, fallback) {
@@ -251,9 +264,11 @@ const cabinJson = JSON.stringify(cabinOptions);
     }
   }
 
-  function tripBase(selection) {
-    const out = Number(selection?.outbound?.price || 0);
-    const back = Number(selection?.inbound?.price || 0);
+  function tripBase(selection, discounted = true) {
+    const outRaw = Number(selection?.outbound?.price || 0);
+    const backRaw = Number(selection?.inbound?.price || 0);
+    const out = discounted ? ticketAfterDiscount(outRaw) : outRaw;
+    const back = discounted ? ticketAfterDiscount(backRaw) : backRaw;
     const pax = Math.max(1, (selection?.adults || 0) + (selection?.children || 0) + (selection?.infants || 0));
     return (out + back) * pax;
   }
@@ -318,9 +333,11 @@ const cabinJson = JSON.stringify(cabinOptions);
     }
 
     function updateTotals() {
-      const total = tripBase(selection) + seatExtras(seats, selection) + bagExtras() + carExtras();
+      const extras = seatExtras(seats, selection) + bagExtras() + carExtras();
+      const totalBefore = tripBase(selection, false) + extras;
+      const total = tripBase(selection, true) + extras;
       const el = document.getElementById('store-final-price');
-      if (el) el.textContent = money(total);
+      if (el) el.innerHTML = totalMoney(totalBefore, total);
       sessionStorage.setItem(STORE_KEY, JSON.stringify(state));
     }
 

@@ -6,6 +6,7 @@ import {
   genderOptions,
 } from '../../data/passengerData';
 import { allCountries } from '../../data/countries';
+import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
 
 const assistJson = JSON.stringify(assistProduct);
 ---
@@ -117,6 +118,7 @@ const assistJson = JSON.stringify(assistProduct);
     genderOptions,
     documentTypes,
     airlineOptions,
+    PORCENTAJE_DESCUENTO,
   }}
 >
   const STORAGE_KEY = 'latam-checkout-selection';
@@ -136,9 +138,27 @@ const assistJson = JSON.stringify(assistProduct);
     assistAdded: false,
     openSummary: '',
   };
+  const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
     return `USD\u00a0${Number(value || 0).toFixed(2).replace('.', ',')}`;
+  }
+
+  function ticketAfterDiscount(original) {
+    const base = Number(original) || 0;
+    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
+    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+  }
+
+  function ticketMoney(original) {
+    const before = Number(original) || 0;
+    if (!(discountPct > 0)) return money(before);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(ticketAfterDiscount(before))}</span></span>`;
+  }
+
+  function totalMoney(before, after) {
+    if (!(discountPct > 0) || Math.abs(before - after) < 0.005) return money(after);
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(after)}</span></span>`;
   }
 
   function readJson(key, fallback) {
@@ -166,9 +186,11 @@ const assistJson = JSON.stringify(assistProduct);
     return groups;
   }
 
-  function tripBase(selection) {
-    const out = Number(selection?.outbound?.price || 0);
-    const back = Number(selection?.inbound?.price || 0);
+  function tripBase(selection, discounted = true) {
+    const outRaw = Number(selection?.outbound?.price || 0);
+    const backRaw = Number(selection?.inbound?.price || 0);
+    const out = discounted ? ticketAfterDiscount(outRaw) : outRaw;
+    const back = discounted ? ticketAfterDiscount(backRaw) : backRaw;
     const pax = Math.max(1, (selection?.adults || 0) + (selection?.children || 0) + (selection?.infants || 0));
     return (out + back) * pax;
   }
@@ -632,11 +654,11 @@ const assistJson = JSON.stringify(assistProduct);
     if (!out) return '<p>Sin vuelos seleccionados.</p>';
     let html = `<p><strong>${selection.from?.city || ''} → ${selection.to?.city || ''}</strong></p>
       <p>${out.depart || ''} – ${out.arrive || ''} · ${out.duration || ''} · ${out.stops || 'Directo'}</p>
-      <p>${money(selection.outbound?.price || 0)} por pasajero</p>`;
+      <p>${ticketMoney(selection.outbound?.price || 0)} por pasajero</p>`;
     if (selection.trip === 'roundtrip' && back) {
       html += `<p class="pax-sum-gap"><strong>${selection.to?.city || ''} → ${selection.from?.city || ''}</strong></p>
         <p>${back.depart || ''} – ${back.arrive || ''} · ${back.duration || ''} · ${back.stops || 'Directo'}</p>
-        <p>${money(selection.inbound?.price || 0)} por pasajero</p>`;
+        <p>${ticketMoney(selection.inbound?.price || 0)} por pasajero</p>`;
     }
     return html;
   }
@@ -657,10 +679,10 @@ const assistJson = JSON.stringify(assistProduct);
 
   function summaryHtml(selection, seats, store, totals) {
     return `
-      ${summaryRow('flights', 'Vuelos', money(totals.flights), flightDetail(selection), 'flights')}
+      ${summaryRow('flights', 'Vuelos', ticketMoney(totals.flightsBefore), flightDetail(selection), 'flights')}
       ${summaryRow('seats', 'Asientos', money(totals.seats), seatDetail(seats), 'seats')}
       ${summaryRow('bags', 'Equipaje', money(totals.bags), bagDetail(store), 'bags')}
-      ${summaryRow('final', 'Precio final', money(totals.final), '<p>Incluye tasas, cargos e impuestos.</p>', 'final', { final: true })}
+      ${summaryRow('final', 'Precio final', totalMoney(totals.finalBefore, totals.final), '<p>Incluye tasas, cargos e impuestos.</p>', 'final', { final: true })}
     `;
   }
 
@@ -668,7 +690,7 @@ const assistJson = JSON.stringify(assistProduct);
     const html = summaryHtml(selection, seats, store, totals);
     if (summaryRoot) summaryRoot.innerHTML = html;
     if (mobileSummary) mobileSummary.innerHTML = html;
-    if (mobileTotal) mobileTotal.textContent = money(totals.final);
+    if (mobileTotal) mobileTotal.innerHTML = totalMoney(totals.finalBefore, totals.final);
   }
 
   function syncInsurance(selection) {
@@ -694,18 +716,22 @@ const assistJson = JSON.stringify(assistProduct);
 
   function computeTotals(selection, seats, store) {
     const people = Math.max(1, (selection.adults || 0) + (selection.children || 0) + (selection.infants || 0));
-    const flights = tripBase(selection);
+    const flightsBefore = tripBase(selection, false);
+    const flights = tripBase(selection, true);
     const seatsTotal = seatExtras(seats, selection);
     const bags = bagExtras(store);
     const assistTotal = state.assistAdded ? assist.pricePerPerson * people : 0;
     const car = store?.selectedCarId ? Number(store.selectedCarPrice || 0) : 0;
+    const extras = seatsTotal + bags + assistTotal + car;
     return {
       flights,
+      flightsBefore,
       seats: seatsTotal,
       bags,
       assist: assistTotal,
       car,
-      final: flights + seatsTotal + bags + assistTotal + car,
+      finalBefore: flightsBefore + extras,
+      final: flights + extras,
     };
   }
 
