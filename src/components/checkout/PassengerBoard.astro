@@ -270,7 +270,7 @@ const assistJson = JSON.stringify(assistProduct);
           <div class="pax-fields">
             <label class="pax-field"><span>Nombre</span><input type="text" name="p${index}-first" data-pax-sync="first" autocomplete="given-name" required /></label>
             <label class="pax-field"><span>Apellido</span><input type="text" name="p${index}-last" data-pax-sync="last" autocomplete="family-name" required /></label>
-            <label class="pax-field"><span>Fecha de nacimiento</span><input type="text" name="p${index}-birth" inputmode="numeric" placeholder="DD/MM/AAAA" required /></label>
+            <label class="pax-field"><span>Fecha de nacimiento</span><input type="text" name="p${index}-birth" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" required /></label>
             <label class="pax-field"><span>Género</span><select name="p${index}-gender" required>${optionsHtml(genderOptions, 'Male')}</select></label>
             <div class="pax-field"><span>País de emisión del documento</span>${countryPicker(`p${index}-doc-country`, 'EC', 'country')}</div>
             <div class="pax-field pax-field--empty" aria-hidden="true"></div>
@@ -300,6 +300,29 @@ const assistJson = JSON.stringify(assistProduct);
       </article>`;
       })
       .join('');
+  }
+
+  function formatBirthDate(value) {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  }
+
+  function setFormattedInput(input, formatted) {
+    if (!input) return;
+    const start = input.selectionStart;
+    const prev = input.value;
+    input.value = formatted;
+    if (typeof start === 'number' && document.activeElement === input) {
+      const diff = formatted.length - prev.length;
+      const next = Math.max(0, start + diff);
+      try {
+        input.setSelectionRange(next, next);
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   function syncPassengerHeads() {
@@ -338,7 +361,11 @@ const assistJson = JSON.stringify(assistProduct);
       if (nameEl) nameEl.dataset.fallback = groups[i]?.type || 'Adulto';
     });
     formsRoot?.addEventListener('input', (e) => {
-      if (!e.target.closest('[data-pax-sync]')) return;
+      const target = e.target;
+      if (target?.matches?.('input[name$="-birth"]')) {
+        setFormattedInput(target, formatBirthDate(target.value));
+      }
+      if (!target?.closest?.('[data-pax-sync]')) return;
       syncPassengerHeads();
     });
     formsRoot?.addEventListener('change', (e) => {
