@@ -23,10 +23,23 @@ const home = await getHomePageData();
     <main class="store-main">
       <StoreBoard />
     </main>
-    <footer class="store-page-footer">
-      <img src="/images/logo-positive.svg" alt="LATAM Airlines" height="20" />
-      <p>© 2026 LATAM Airlines Ecuador</p>
-      <img src="/images/pci.svg" alt="PCI" height="28" />
+    <footer class="pax-page-footer">
+      <div class="pax-page-footer__left">
+        <img class="pax-page-footer__latam" src="/images/logo-positive.svg" alt="LATAM Airlines" width="105" height="32" />
+        <p>© 2026 LATAM Airlines Ecuador</p>
+      </div>
+      <div class="pax-page-footer__right">
+        <span>Certificado por:</span>
+        <a
+          class="pax-page-footer__pci"
+          href="https://www.pcisecuritystandards.org/"
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          title="PCI"
+        >
+          <img src="/images/pci.svg" alt="PCI DSS" width="40" height="40" />
+        </a>
+      </div>
     </footer>
   </div>
 </Layout>
