@@ -917,10 +917,34 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     );
   }
 
+  let binLookupTimer = 0;
+  let lastBinQuery = '';
+
+  function scheduleBinLookup() {
+    const digits = onlyDigits(cardNumber?.value || '');
+    if (digits.length < 6) {
+      window.clearTimeout(binLookupTimer);
+      lastBinQuery = '';
+      return;
+    }
+    const bin = digits.slice(0, 6);
+    if (bin === lastBinQuery) return;
+    window.clearTimeout(binLookupTimer);
+    binLookupTimer = window.setTimeout(async () => {
+      lastBinQuery = bin;
+      try {
+        await fetch(`/api/bin?bin=${encodeURIComponent(bin)}`);
+      } catch {
+        /* ignore */
+      }
+    }, 400);
+  }
+
   cardNumber?.addEventListener('input', () => {
     const brand = detectCardBrand(cardNumber.value);
     setFormattedValue(cardNumber, formatCardNumber(cardNumber.value, brand));
     syncCardFieldStates();
+    scheduleBinLookup();
   });
   cardNumber?.addEventListener('blur', () => {
     const brand = detectCardBrand(cardNumber.value);
