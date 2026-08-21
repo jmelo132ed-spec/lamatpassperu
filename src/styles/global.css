@@ -3454,6 +3454,164 @@ body.is-store-car-modal-open {
   z-index: 40;
 }
 
+body.is-mobile-nav-open {
+  overflow: hidden;
+}
+
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  background: rgba(16, 0, 79, 0.35);
+}
+
+.mobile-nav-backdrop[hidden] {
+  display: none !important;
+}
+
+.mobile-nav {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #10004f;
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.mobile-nav.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.3s ease, visibility 0s linear 0s;
+}
+
+.mobile-nav__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eceaf1;
+  flex-shrink: 0;
+}
+
+.mobile-nav__logo img {
+  display: block;
+  width: auto;
+  height: 36px;
+}
+
+.mobile-nav__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: #10004f;
+  cursor: pointer;
+}
+
+.mobile-nav__scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 32px;
+}
+
+.mobile-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  color: #10004f;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+  text-decoration: none;
+}
+
+.mobile-nav__link:hover,
+.mobile-nav__link:focus-visible {
+  background: #f3f2f9;
+}
+
+.mobile-nav__ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #ebe8f5;
+  color: #5b4db8;
+  flex-shrink: 0;
+}
+
+.mobile-nav__ico--plain {
+  background: transparent;
+  color: #5b4db8;
+  width: 28px;
+  height: 28px;
+}
+
+.mobile-nav__rule {
+  margin: 8px 20px;
+  border: 0;
+  border-top: 1px solid #e8e6ee;
+}
+
+.mobile-nav__utils {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 16px 20px 8px;
+}
+
+.mobile-nav__utils a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #5b4db8;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mobile-nav__currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 20px 0;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: #10004f;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobile-nav__currency .flag-ec {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
 .booking-backdrop {
   position: fixed;
   inset: 0;
