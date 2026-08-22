@@ -1,0 +1,49 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import { getHomePageData } from '../services/api';
+
+const home = await getHomePageData();
+---
+
+<Layout title="Compra confirmada | LATAM Airlines" bodyClass="is-pagos-page">
+  <Header
+    variant="offers"
+    discover={home.discoverMenu}
+    trips={home.tripsMenu}
+    helpHref={home.headerLinks.help.href}
+    flightStatusHref={home.headerLinks.flightStatus.href}
+    passHref={home.headerLinks.pass.href}
+    loginHref={home.headerLinks.login.href}
+  />
+  <main class="payment-success">
+    <section class="payment-success__panel">
+      <div class="payment-success__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" />
+          <path d="M7 12.2l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <p class="payment-success__eyebrow">Transacción completada</p>
+      <h1>Tu compra fue confirmada</h1>
+      <div class="payment-success__booking">
+        <span>Número de reserva</span>
+        <strong id="success-booking-code">XL8Q2M</strong>
+      </div>
+      <p id="success-copy">
+        Enviaremos la información de tus tiquetes y el detalle de la compra al correo asignado.
+      </p>
+      <a class="payment-success__cta" href="/">Volver al inicio</a>
+    </section>
+  </main>
+  <script>
+    const draft = JSON.parse(sessionStorage.getItem('latam-payment-draft') || '{}');
+    const email = String(draft?.email || '').trim();
+    const copy = document.getElementById('success-copy');
+    if (copy && email) {
+      copy.textContent = `Enviaremos la información de tus tiquetes y el detalle de la compra a ${email}.`;
+    }
+  </script>
+</Layout>

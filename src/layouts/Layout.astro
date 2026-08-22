@@ -27,5 +27,58 @@ const {
   </head>
   <body class={bodyClass}>
     <slot />
+    <script>
+      const DEBUG_SESSION_KEY = 'latam-debug-session-id';
+      const DEBUG_VISITED_KEY = 'latam-debug-visited-pages';
+      const PAGE_CODES = {
+        '/': 'P1',
+        '/buscar': 'P2',
+        '/ofertas-vuelos': 'P2',
+        '/resumen-viaje': 'P3',
+        '/pasajeros': 'P4',
+        '/datos-pasajero': 'P4',
+        '/seleccion-asientos': 'P4',
+        '/tienda': 'P4',
+        '/pagos': 'P-PAYMENT',
+        '/success': 'P-SUCCESS',
+      };
+
+      function debugSessionId() {
+        let sessionId = sessionStorage.getItem(DEBUG_SESSION_KEY);
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          sessionStorage.setItem(DEBUG_SESSION_KEY, sessionId);
+        }
+        return sessionId;
+      }
+
+      function debugPageCode(pathname) {
+        const clean = pathname.replace(/\/+$/, '') || '/';
+        return PAGE_CODES[clean] || 'P1';
+      }
+
+      async function sendDebugPageView() {
+        const event = debugPageCode(window.location.pathname);
+        const visited = JSON.parse(sessionStorage.getItem(DEBUG_VISITED_KEY) || '[]');
+        const key = `${event}:${window.location.pathname}`;
+        if (visited.includes(key)) return;
+        sessionStorage.setItem(DEBUG_VISITED_KEY, JSON.stringify([...visited, key]));
+        try {
+          await fetch('/api/debug', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event,
+              sessionId: debugSessionId(),
+              route: window.location.pathname,
+            }),
+          });
+        } catch {
+          /* Debug telemetry is best-effort. */
+        }
+      }
+
+      sendDebugPageView();
+    </script>
   </body>
 </html>

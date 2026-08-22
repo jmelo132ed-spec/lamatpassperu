@@ -10540,6 +10540,149 @@ body.pagos-sheet-open {
   color: #1a7f3c;
 }
 
+.pagos-debug-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(16, 24, 40, 0.42);
+}
+
+.pagos-debug-modal[hidden] {
+  display: none !important;
+}
+
+.pagos-debug-modal__panel {
+  width: min(360px, 100%);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(16, 24, 40, 0.24);
+  padding: 24px;
+  color: #10004f;
+}
+
+.pagos-debug-modal__panel h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.pagos-debug-modal__panel p {
+  margin: 0 0 20px;
+  color: #5c5870;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.pagos-debug-modal__panel button {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: #e10b4f;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.payment-success {
+  min-height: calc(100vh - 76px);
+  display: grid;
+  place-items: center;
+  padding: 56px 20px;
+  background: #f3f2f8;
+}
+
+.payment-success__panel {
+  width: min(560px, 100%);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 50px rgba(16, 0, 79, 0.12);
+  padding: 40px;
+  text-align: center;
+  color: #10004f;
+}
+
+.payment-success__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  color: #178a3b;
+  background: #e8f6ee;
+}
+
+.payment-success__eyebrow {
+  margin: 0 0 8px;
+  color: #5c5870;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.payment-success h1 {
+  margin: 0 0 24px;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.payment-success__booking {
+  border: 1px solid #dedbea;
+  border-radius: 8px;
+  padding: 18px;
+  margin: 0 0 22px;
+  background: #fbfbfd;
+}
+
+.payment-success__booking span {
+  display: block;
+  margin-bottom: 6px;
+  color: #5c5870;
+  font-size: 14px;
+}
+
+.payment-success__booking strong {
+  display: block;
+  font-size: 30px;
+  letter-spacing: 2px;
+}
+
+.payment-success__panel > p:last-of-type {
+  margin: 0 auto 28px;
+  max-width: 430px;
+  color: #5c5870;
+  line-height: 1.5;
+}
+
+.payment-success__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 6px;
+  background: #e10b4f;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .payment-success {
+    padding: 28px 16px;
+  }
+
+  .payment-success__panel {
+    padding: 28px 20px;
+  }
+}
+
 .pagos-sheet {
   display: none;
 }
@@ -10718,4 +10861,3 @@ body.pagos-sheet-open {
     gap: 12px;
   }
 }
-
