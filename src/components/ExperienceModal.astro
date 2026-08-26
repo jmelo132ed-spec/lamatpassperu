@@ -1,7 +1,7 @@
 ---
 import { countries } from '../data/countries';
 
-const current = countries.find((c) => c.id === 'ec') ?? countries[0];
+const current = countries.find((c) => c.id === 'pe') ?? countries[0];
 ---
 
 <div class="xp-overlay hidden" id="xp-overlay" hidden>
@@ -26,7 +26,7 @@ const current = countries.find((c) => c.id === 'ec') ?? countries[0];
       <ul class="xp-list hidden" id="xp-list" role="listbox" hidden>
         {countries.map((c) => (
           <li>
-            <button class="xp-option" type="button" role="option" data-id={c.id} data-label={c.label} aria-selected={c.id === 'ec' ? 'true' : 'false'}>
+            <button class="xp-option" type="button" role="option" data-id={c.id} data-label={c.label} aria-selected={c.id === 'pe' ? 'true' : 'false'}>
               <span class="xp-flag" aria-hidden="true" set:html={c.flag}></span>
               {c.label}
             </button>

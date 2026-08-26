@@ -24,7 +24,7 @@ const datesLabel = query.trip === 'oneway'
   : [prettyDate(depart), prettyDate(returnDate)].filter(Boolean).join(' - ');
 ---
 
-<Layout title="Selección de vuelos | LATAM Ecuador" bodyClass={`${waiting ? 'is-offers-waiting' : ''} is-offers-page`.trim()}>
+<Layout title="Selección de vuelos | LATAM Perú" bodyClass={`${waiting ? 'is-offers-waiting' : ''} is-offers-page`.trim()}>
   {waiting && (
     <div class="offers-wait-screen" id="offers-wait-screen" role="status" aria-live="polite" aria-label="Cargando">
       <span class="offers-wait-screen__spin" aria-hidden="true"></span>

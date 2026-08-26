@@ -236,6 +236,7 @@ export const allCountries: CountryItem[] = [
 
 export function countryFlagSrc(code: string) {
   const lower = code.toLowerCase();
+  if (lower === 'pe') return '/images/pax-assets/flag-pe.svg';
   if (lower === 'ec') return '/images/pax-assets/flag-ec.svg';
   return `/images/pax-assets/flags/${lower}.png`;
 }

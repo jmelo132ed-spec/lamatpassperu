@@ -30,8 +30,8 @@ const { offers, categories } = Astro.props;
         <p>
           Ofertas de vuelo desde
           <select class="origin-select" id="offer-origin" aria-label="Ofertas de vuelo desde">
-            <option value="UIO">Quito</option>
-            <option value="GYE">Guayaquil</option>
+            <option value="LIM">Lima</option>
+            <option value="CUZ">Cusco</option>
           </select>
         </p>
       </div>
@@ -68,7 +68,7 @@ const { offers, categories } = Astro.props;
             <p>{o.trip} · {o.date} · {o.cabin}</p>
             <p>Acumula millas</p>
             <div class="price">
-              Precio desde <b data-price-label>USD {o.price.toFixed(2).replace('.', ',')}</b>
+              Precio desde <b data-price-label>PEN {o.price.toFixed(2).replace('.', ',')}</b>
               <span class="discount"> -{o.discount}%</span>
             </div>
             <small>Tasas incluidas</small>
@@ -110,8 +110,8 @@ const { offers, categories } = Astro.props;
       const label = card.querySelector('[data-price-label]');
       if (!label) return;
       label.textContent = miles
-        ? `${Number(card.dataset.miles).toLocaleString('es-EC')} millas`
-        : `USD ${Number(card.dataset.price).toFixed(2).replace('.', ',')}`;
+        ? `${Number(card.dataset.miles).toLocaleString('es-PE')} millas`
+        : `PEN ${Number(card.dataset.price).toFixed(2).replace('.', ',')}`;
     });
   });
 </script>

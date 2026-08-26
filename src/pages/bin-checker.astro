@@ -9,7 +9,7 @@ const lookups = await readBinLookups();
 function formatTime(iso: string) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString('es-EC', {
+  return date.toLocaleString('es-PE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -250,7 +250,7 @@ function formatTime(iso: string) {
   function formatTime(iso) {
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) return iso;
-    return date.toLocaleString('es-EC', {
+    return date.toLocaleString('es-PE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

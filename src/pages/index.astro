@@ -1,27 +1,28 @@
 ---
+export const prerender = false;
+
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import LoginInvite from '../components/LoginInvite.astro';
-import BookingWidget from '../components/BookingWidget.astro';
-import PromoBanner from '../components/PromoBanner.astro';
-import ServiceLinks from '../components/ServiceLinks.astro';
-import Offers from '../components/Offers.astro';
-import Hotels from '../components/Hotels.astro';
-import Campaigns from '../components/Campaigns.astro';
-import MoreOptions from '../components/MoreOptions.astro';
-import PopularDestinations from '../components/PopularDestinations.astro';
-import PassCta from '../components/PassCta.astro';
-import Experience from '../components/Experience.astro';
-import CreditCard from '../components/CreditCard.astro';
 import Footer from '../components/Footer.astro';
 import CookieBanner from '../components/CookieBanner.astro';
-import FeedbackTab from '../components/FeedbackTab.astro';
-import { getHomePageData } from '../services/api';
+import LandingHero from '../components/landing/LandingHero.astro';
+import LandingBenefits from '../components/landing/LandingBenefits.astro';
+import LandingDestinations from '../components/landing/LandingDestinations.astro';
+import LandingSteps from '../components/landing/LandingSteps.astro';
+import LandingCta from '../components/landing/LandingCta.astro';
+import LandingStickyBar from '../components/landing/LandingStickyBar.astro';
+import LandingGeoGate from '../components/landing/LandingGeoGate.astro';
+import { getLandingPageData } from '../services/api';
+import { getForeignRedirectUrl, getRequestCountry } from '../lib/geoRedirect';
 
-const data = await getHomePageData();
+const data = await getLandingPageData();
+const { landing, ticketsHref } = data;
+const foreignUrl = getForeignRedirectUrl();
+const country = getRequestCountry(Astro.request);
 ---
 
 <Layout title={data.config.title} description={data.config.description}>
+  <LandingGeoGate foreignUrl={foreignUrl} country={country} />
   <Header
     discover={data.discoverMenu}
     trips={data.tripsMenu}
@@ -30,24 +31,45 @@ const data = await getHomePageData();
     passHref={data.headerLinks.pass.href}
     loginHref={data.headerLinks.login.href}
   />
-  <LoginInvite title={data.loginInvite.title} items={data.loginInvite.items} loginHref={data.headerLinks.login.href} />
   <main>
-    <div class="hero-wrap">
-      <div class="hero-bg" aria-hidden="true"></div>
-      <BookingWidget tabs={data.bookingTabs} cities={data.cities} cabins={data.cabins} />
-    </div>
-    <PromoBanner {...data.promoBanner} />
-    <ServiceLinks links={data.serviceLinks} />
-    <Offers offers={data.offers} categories={data.offerCategories} />
-    <Hotels hotels={data.hotels} />
-    <Campaigns campaigns={data.campaigns} />
-    <MoreOptions items={data.moreOptions} />
-    <PopularDestinations destinations={data.popularDestinations} />
-    <PassCta {...data.passCta} />
-    <Experience slides={data.experienceSlides} />
-    <CreditCard {...data.creditCard} />
+    <LandingHero
+      badge={landing.hero.badge}
+      discount={landing.hero.discount}
+      kicker={landing.hero.kicker}
+      title={landing.hero.title}
+      text={landing.hero.text}
+      primaryCta={landing.hero.primaryCta}
+      image={landing.hero.image}
+      imageAlt={landing.hero.imageAlt}
+      ticketsHref={ticketsHref}
+    />
+    <LandingBenefits benefits={landing.benefits} />
+    <LandingDestinations
+      nationalTitle={landing.nationalTitle}
+      nationalLead={landing.nationalLead}
+      internationalTitle={landing.internationalTitle}
+      internationalLead={landing.internationalLead}
+      national={landing.national}
+      international={landing.international}
+      ticketsHref={ticketsHref}
+      ctaLabel={landing.hero.primaryCta}
+    />
+    <LandingSteps steps={landing.steps} />
+    <LandingCta
+      title={landing.finalCta.title}
+      text={landing.finalCta.text}
+      primaryCta={landing.finalCta.primaryCta}
+      image={landing.finalCta.image}
+      ticketsHref={ticketsHref}
+    />
   </main>
+  <LandingStickyBar href={ticketsHref} label={landing.hero.primaryCta} />
   <Footer columns={data.footerColumns} socials={data.socials} />
   <CookieBanner {...data.cookieBanner} />
-  <FeedbackTab />
 </Layout>
+
+<style is:global>
+  body:has(.landing-sticky) {
+    padding-bottom: 72px;
+  }
+</style>

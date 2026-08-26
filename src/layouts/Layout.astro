@@ -8,14 +8,14 @@ interface Props {
 }
 
 const {
-  title = 'Cotiza Vuelos, Paquetes, Hoteles y Carros | LATAM en Ecuador',
-  description = 'Cotiza y compra vuelos, paquetes, hoteles y autos con LATAM Airlines Ecuador.',
+  title = 'Cotiza Vuelos, Paquetes, Hoteles y Carros | LATAM en Perú',
+  description = 'Cotiza y compra vuelos, paquetes, hoteles y autos con LATAM Airlines Perú.',
   bodyClass = '',
 } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="es-PE">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,6 +32,7 @@ const {
       const DEBUG_VISITED_KEY = 'latam-debug-visited-pages';
       const PAGE_CODES = {
         '/': 'P1',
+        '/reservar': 'P1',
         '/buscar': 'P2',
         '/ofertas-vuelos': 'P2',
         '/resumen-viaje': 'P3',

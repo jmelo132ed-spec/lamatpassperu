@@ -357,7 +357,7 @@ function refineLatamOperator(
   const inferred = subsidiaryFromPlace(originCode, originCity) || subsidiaryFromPlace(destCode, destCity);
   if (inferred) return { name: inferred.name, code: inferred.code };
   if (isGenericLatamName(op.name) || op.code === 'LA') {
-    return { name: 'LATAM Airlines Ecuador', code: 'XL' };
+    return { name: 'LATAM Airlines Perú', code: 'LP' };
   }
   return op;
 }
@@ -401,7 +401,7 @@ function collectOperators(
     pushOp(op);
   }
 
-  return out.length ? out : [{ name: 'LATAM Airlines Ecuador', code: 'XL' }];
+  return out.length ? out : [{ name: 'LATAM Airlines Perú', code: 'LP' }];
 }
 
 function isLatamCarrier(carrier?: Carrier) {
@@ -425,7 +425,7 @@ function legHasLatam(leg: Leg | undefined, segments: Map<string, Segment>, carri
 export function parseFlightApi(
   payload: FlightApiPayload,
   cabin = 'Economy',
-  opts?: { domesticEcuador?: boolean },
+  opts?: { domesticPeru?: boolean },
 ): FlightResult[] {
   const legs = new Map((payload.legs || []).map((leg) => [leg.id, leg]));
   const segments = new Map((payload.segments || []).map((seg) => [seg.id, seg]));
@@ -443,8 +443,8 @@ export function parseFlightApi(
     const out = legInfo(outbound, segments, carriers);
     const back = inbound ? legInfo(inbound, segments, carriers) : undefined;
     const latam = legHasLatam(outbound, segments, carriers);
-    const airline = opts?.domesticEcuador && latam
-      ? 'LATAM Airlines Ecuador'
+    const airline = opts?.domesticPeru && latam
+      ? 'LATAM Airlines Perú'
       : carrier?.name || carrier?.display_code || 'Aerolínea';
     const itinerary = buildItinerary(outbound, segments, carriers, places, airline);
 
@@ -474,7 +474,7 @@ export function parseFlightApi(
   });
 
   const latamRows = rows.filter((r) => r.latam);
-  const list = latamRows.filter((r) => isLatamStyleItinerary(r, Boolean(opts?.domesticEcuador)));
+  const list = latamRows.filter((r) => isLatamStyleItinerary(r, Boolean(opts?.domesticPeru)));
   return list.sort(sortRecommended).slice(0, 40);
 }
 
@@ -489,9 +489,9 @@ function longestLayover(flight: FlightResult) {
   return Math.max(0, ...(flight.itinerary || []).map((seg) => layoverMinutes(seg.layover)));
 }
 
-function isLatamStyleItinerary(flight: FlightResult, domesticEcuador: boolean) {
+function isLatamStyleItinerary(flight: FlightResult, domesticPeru: boolean) {
   if (!flight.durationMinutes || flight.stopCount > 2) return false;
-  if (domesticEcuador) {
+  if (domesticPeru) {
     if (flight.stopCount === 0) return flight.durationMinutes <= 180;
     return flight.durationMinutes <= 600;
   }
@@ -539,8 +539,8 @@ export async function fetchFlightApi(params: {
   const cabin = mapCabin(params.cabin);
   const path =
     params.trip === 'roundtrip' && params.returnDate
-      ? `roundtrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.returnDate}/${params.adults}/${params.children}/${params.infants}/${cabin}/USD`
-      : `onewaytrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.adults}/${params.children}/${params.infants}/${cabin}/USD`;
+      ? `roundtrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.returnDate}/${params.adults}/${params.children}/${params.infants}/${cabin}/PEN`
+      : `onewaytrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.adults}/${params.children}/${params.infants}/${cabin}/PEN`;
 
   const res = await fetch(`https://api.flightapi.io/${path}`, {
     signal: AbortSignal.timeout(28000),

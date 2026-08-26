@@ -61,7 +61,7 @@ const rowsJson = JSON.stringify(rows);
       <div class="seats-side__foot">
         <button type="button" class="seats-price-toggle" id="seats-price-toggle" aria-expanded="false">
           <span>Precio final</span>
-          <strong id="seats-final-price">USD 0,00</strong>
+          <strong id="seats-final-price">PEN 0,00</strong>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" width="16" height="16" aria-hidden="true">
             <path fill="currentColor" d="M27.55 7.77 16 19.36 4.45 7.77 2 10.22 16 24.22 30 10.22 27.55 7.77Z"/>
           </svg>
@@ -117,7 +117,7 @@ const rowsJson = JSON.stringify(rows);
     </header>
     <div class="seats-exit-modal__banner">
       <p>Para viajar en este tipo de asiento debes cumplir ciertos requisitos de seguridad y autonomía</p>
-      <p class="seats-exit-modal__from">Desde <strong id="seats-exit-price">USD 17,93</strong> por persona</p>
+      <p class="seats-exit-modal__from">Desde <strong id="seats-exit-price">PEN 60,44</strong> por persona</p>
     </div>
     <p class="seats-exit-modal__age-label">¿Cuál es la edad de la persona? Selecciónala para poder continuar</p>
     <label class="seats-exit-modal__select">
@@ -167,7 +167,7 @@ const rowsJson = JSON.stringify(rows);
   const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
-    return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+    return `PEN ${Number(value).toFixed(2).replace('.', ',')}`;
   }
 
   function ticketAfterDiscount(original) {

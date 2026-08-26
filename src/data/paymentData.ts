@@ -31,7 +31,7 @@ export const paymentCopy = {
   invoiceTitle: '¿Necesitas factura?',
   invoiceToggle: 'Solicitar Factura',
   invoiceTips: [
-    'Factura válida para personas y empresas inscritas en Ecuador.',
+    'Factura válida para personas y empresas inscritas en Perú.',
     'Para justificar costos o gastos, ingresar el RUC, de lo contrario el documento tendrá validez de boleta de venta.',
     'Aplica un solo RUC para toda la compra.',
   ],
@@ -42,11 +42,11 @@ export const paymentCopy = {
   invoiceEmail: 'Email',
   invoiceEmailHint: 'Este correo recibirá la factura',
   invoiceConfirm:
-    'Confirmo que los datos son correctos y que coinciden con los del Servicio de Rentas Internas de Ecuador.',
-  invoiceDefaultCountry: 'Ecuador',
+    'Confirmo que los datos son correctos y que coinciden con los de SUNAT.',
+  invoiceDefaultCountry: 'Perú',
   termsPrefix: 'Al continuar acepto los',
   termsLink: 'términos y condiciones de la compra',
-  termsHref: 'https://www.latamairlines.com/ec/es/legal/condiciones-generales-transporte',
+  termsHref: 'https://www.latamairlines.com/pe/es/legal/condiciones-generales-transporte',
   payPrefix: 'Pagar',
   processingTitle: 'Estamos procesando tu pago',
   processingHint: 'No recargues ni cierres la página',
@@ -54,21 +54,21 @@ export const paymentCopy = {
 
 export const defaultPaymentLegs: PaymentLeg[] = [
   {
-    title: 'De Quito a Guayaquil',
+    title: 'De Lima a Cusco',
     dateLabel: 'dom, 23 ago',
     depart: '07:40',
-    arrive: '08:33',
-    fromCode: 'UIO',
-    toCode: 'GYE',
+    arrive: '08:55',
+    fromCode: 'LIM',
+    toCode: 'CUZ',
     brand: 'Full',
   },
   {
-    title: 'De Guayaquil a Quito',
+    title: 'De Cusco a Lima',
     dateLabel: 'mar, 22 sept',
     depart: '14:58',
-    arrive: '15:50',
-    fromCode: 'GYE',
-    toCode: 'UIO',
+    arrive: '16:15',
+    fromCode: 'CUZ',
+    toCode: 'LIM',
     brand: 'Full',
   },
 ];

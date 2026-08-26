@@ -64,7 +64,7 @@ const assistJson = JSON.stringify(assistProduct);
           <div class="pax-insurance__buy">
             <span class="pax-insurance__miles">Acumula millas</span>
             <span class="pax-insurance__total-label" id="pax-insurance-total-label">Total para 1 persona</span>
-            <strong class="pax-insurance__price" id="pax-insurance-price">USD {assistProduct.pricePerPerson.toFixed(2).replace('.', ',')}</strong>
+            <strong class="pax-insurance__price" id="pax-insurance-price">PEN {assistProduct.pricePerPerson.toFixed(2).replace('.', ',')}</strong>
             <button type="button" class="pax-insurance__add" id="pax-insurance-add" aria-pressed="false">Agregar</button>
           </div>
         </article>
@@ -104,7 +104,7 @@ const assistJson = JSON.stringify(assistProduct);
   <div class="pax-mobile-bar__panel">
     <button type="button" class="pax-mobile-bar__price" id="pax-mobile-price-toggle" aria-expanded="false">
       <span>Precio final <svg viewBox="0 0 32 32" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M4.45 24.23 16 12.64 27.55 24.23 30 21.78 16 7.78 2 21.78 4.45 24.23Z"/></svg></span>
-      <strong id="pax-mobile-total">USD 0,00</strong>
+      <strong id="pax-mobile-total">PEN 0,00</strong>
     </button>
     <div class="pax-mobile-bar__stretch" id="pax-mobile-stretch" aria-hidden="true"></div>
     <button type="button" class="checkout-continue pax-mobile-bar__cta" id="pax-continue-mobile">Continuar al pago</button>
@@ -141,7 +141,7 @@ const assistJson = JSON.stringify(assistProduct);
   const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
-    return `USD\u00a0${Number(value || 0).toFixed(2).replace('.', ',')}`;
+    return `PEN\u00a0${Number(value || 0).toFixed(2).replace('.', ',')}`;
   }
 
   function ticketAfterDiscount(original) {
@@ -224,7 +224,8 @@ const assistJson = JSON.stringify(assistProduct);
   }
 
   function flagSrc(code) {
-    const lower = String(code || 'ec').toLowerCase();
+    const lower = String(code || 'pe').toLowerCase();
+    if (lower === 'pe') return '/images/pax-assets/flag-pe.svg';
     if (lower === 'ec') return '/images/pax-assets/flag-ec.svg';
     return `https://flagcdn.com/w80/${lower}.png`;
   }
@@ -236,8 +237,8 @@ const assistJson = JSON.stringify(assistProduct);
 
   function countryPicker(name, selectedCode, mode) {
     const list = Array.isArray(countries) ? countries : [];
-    const selected = list.find((c) => c.code === selectedCode) || list.find((c) => c.code === 'EC') || list[0];
-    if (!selected) return `<input type="hidden" name="${name}" value="EC" />`;
+    const selected = list.find((c) => c.code === selectedCode) || list.find((c) => c.code === 'PE') || list[0];
+    if (!selected) return `<input type="hidden" name="${name}" value="PE" />`;
     const label = mode === 'dial' ? selected.dial : selected.name;
     const options = list
       .map((c) => {
@@ -261,7 +262,7 @@ const assistJson = JSON.stringify(assistProduct);
   }
 
   const docTypeShort = {
-    DNI: 'C. Identidad',
+    DNI: 'DNI',
     PP: 'Pasaporte',
     CE: 'C. Extranjería',
   };
@@ -294,7 +295,7 @@ const assistJson = JSON.stringify(assistProduct);
             <label class="pax-field"><span>Apellido</span><input type="text" name="p${index}-last" data-pax-sync="last" autocomplete="family-name" required /></label>
             <label class="pax-field"><span>Fecha de nacimiento</span><input type="text" name="p${index}-birth" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" required /></label>
             <label class="pax-field"><span>Género</span><select name="p${index}-gender" required>${optionsHtml(genderOptions, 'Male')}</select></label>
-            <div class="pax-field"><span>País de emisión del documento</span>${countryPicker(`p${index}-doc-country`, 'EC', 'country')}</div>
+            <div class="pax-field"><span>País de emisión del documento</span>${countryPicker(`p${index}-doc-country`, 'PE', 'country')}</div>
             <div class="pax-field pax-field--empty" aria-hidden="true"></div>
             <label class="pax-field"><span>Tipo de documento</span><select name="p${index}-doc-type" data-pax-sync="doc-type" required>${optionsHtml(documentTypes, 'DNI')}</select></label>
             <label class="pax-field"><span>Número de documento</span><input type="text" name="p${index}-doc-number" data-pax-sync="doc-number" required /></label>
@@ -312,7 +313,7 @@ const assistJson = JSON.stringify(assistProduct);
           <div class="pax-fields pax-fields--contact">
             <label class="pax-field"><span>Email</span><input type="email" name="contact-email" autocomplete="email" required /></label>
             <div class="pax-phone">
-              <div class="pax-field"><span>Código</span>${countryPicker('contact-code', 'EC', 'dial')}</div>
+              <div class="pax-field"><span>Código</span>${countryPicker('contact-code', 'PE', 'dial')}</div>
               <label class="pax-field pax-field--grow"><span>Número</span><input type="tel" name="contact-phone" autocomplete="tel-national" required /></label>
             </div>
           </div>`

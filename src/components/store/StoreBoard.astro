@@ -78,7 +78,7 @@ const cabinJson = JSON.stringify(cabinOptions);
                 <img src="/images/tienda-assets/bag-hold.svg" alt="" width="40" height="53" />
                 <div>
                   <strong>{holdBagKg} kg</strong>
-                  <span>USD {holdBagPrice.toFixed(2).replace('.', ',')}</span>
+                  <span>PEN {holdBagPrice.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
               <div class="store-qty" data-qty>
@@ -102,7 +102,7 @@ const cabinJson = JSON.stringify(cabinOptions);
             </button>
             <div class="store-special__panel hidden" id="store-special-panel" hidden>
               <div class="store-special__offer">
-                <strong class="store-special__price">USD {specialBagPrice.toFixed(2).replace('.', ',')}</strong>
+                <strong class="store-special__price">PEN {specialBagPrice.toFixed(2).replace('.', ',')}</strong>
                 <div class="store-qty" data-qty>
                   <button type="button" class="store-qty__btn" id="store-special-minus" aria-label="Eliminar un equipaje especial" disabled>−</button>
                   <span id="store-special-count">0</span>
@@ -178,9 +178,9 @@ const cabinJson = JSON.stringify(cabinOptions);
                   <span>{car.bags} maletas</span>
                   <span>{car.transmission}</span>
                 </div>
-                <div class="store-car-card__miles">Acumula {car.miles.toLocaleString('es-EC')} Millas LATAM Pass</div>
+                <div class="store-car-card__miles">Acumula {car.miles.toLocaleString('es-PE')} Millas LATAM Pass</div>
                 <img class="store-car-card__vendor" src={car.vendorLogo} alt={`Logotipo de ${car.vendor}`} height="20" />
-                <strong class="store-car-card__price">USD {car.price.toFixed(2).replace('.', ',')}</strong>
+                <strong class="store-car-card__price">PEN {car.price.toFixed(2).replace('.', ',')}</strong>
                 <button type="button" class="store-car-card__cta" data-car-detail={car.id}>Ver detalle</button>
               </article>
             ))}
@@ -217,7 +217,7 @@ const cabinJson = JSON.stringify(cabinOptions);
             <path fill="currentColor" d="M4.45004 24.2251L16 12.6401L27.55 24.2251L30 21.7751L16 7.77511L2 21.7751L4.45004 24.2251Z"/>
           </svg>
         </span>
-        <strong id="store-final-price">USD 0,00</strong>
+        <strong id="store-final-price">PEN 0,00</strong>
       </button>
       <button type="button" class="checkout-continue store-bar__cta is-disabled" id="store-next-step" aria-disabled="true">Ir al siguiente paso</button>
     </div>
@@ -262,7 +262,7 @@ const cabinJson = JSON.stringify(cabinOptions);
   const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
-    return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+    return `PEN ${Number(value).toFixed(2).replace('.', ',')}`;
   }
 
   function ticketAfterDiscount(original) {
@@ -500,7 +500,7 @@ const cabinJson = JSON.stringify(cabinOptions);
           <span>${transmission}</span>
           <span>${car.fuel}</span>
         </div>
-        <div class="store-car-modal__miles">Acumula ${Number(car.miles).toLocaleString('es-EC')} Millas LATAM Pass</div>
+        <div class="store-car-modal__miles">Acumula ${Number(car.miles).toLocaleString('es-PE')} Millas LATAM Pass</div>
         <strong class="store-car-modal__price">${money(car.price)}</strong>
         <p class="store-car-modal__pay">Paga solo al recoger · Sin cargo si cancelas a tiempo</p>
         <ul class="store-car-modal__includes">

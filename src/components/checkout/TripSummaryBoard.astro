@@ -31,7 +31,7 @@ import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
   }
 
   function money(value) {
-    return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
+    return `PEN ${Number(value).toFixed(2).replace('.', ',')}`;
   }
 
   function ticketAfterDiscount(original) {
@@ -82,7 +82,7 @@ import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
       const first = typeof raw[0] === 'string' ? raw[0] : raw[0].name;
       if (first) return first;
     }
-    return flight?.airline || 'LATAM Airlines Ecuador';
+    return flight?.airline || 'LATAM Airlines Perú';
   }
 
   function checkIcon() {

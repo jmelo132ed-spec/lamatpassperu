@@ -22,6 +22,21 @@ export default defineConfig({
         access: 'public',
         default: 0,
       }),
+      PUBLIC_TICKETS_URL: envField.string({
+        context: 'client',
+        access: 'public',
+        default: '/reservar',
+      }),
+      PUBLIC_FOREIGN_REDIRECT_URL: envField.string({
+        context: 'client',
+        access: 'public',
+        optional: true,
+      }),
+      PUBLIC_FORCE_COUNTRY: envField.string({
+        context: 'client',
+        access: 'public',
+        optional: true,
+      }),
     },
   },
   vite: {

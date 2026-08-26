@@ -35,14 +35,14 @@ export const cabinOptions: CabinOption[] = [
     id: 'cabin-plus',
     title: '1 bolso o mochila + 1 maleta pequeña 12 kg',
     subtitle: '',
-    priceLabel: 'Ambos por USD 28,00',
-    price: 28,
+    priceLabel: 'Ambos por PEN 94,92',
+    price: 94.92,
   },
 ];
 
-export const holdBagPrice = 35;
+export const holdBagPrice = 118.65;
 export const holdBagKg = 23;
-export const specialBagPrice = 40;
+export const specialBagPrice = 135.6;
 
 const carIncludes = [
   'Kilometraje ilimitado',
@@ -59,7 +59,7 @@ export const storeCars: StoreCar[] = [
     bags: 2,
     transmission: 'M',
     miles: 1956,
-    price: 651.84,
+    price: 2209.74,
     image: '/images/tienda-assets/spark.jpg',
     vendor: 'Europcar',
     vendorLogo: '/images/tienda-assets/europcar.webp',
@@ -75,7 +75,7 @@ export const storeCars: StoreCar[] = [
     bags: 3,
     transmission: 'M',
     miles: 2016,
-    price: 671.92,
+    price: 2277.81,
     image: '/images/tienda-assets/picanto.jpg',
     vendor: 'Europcar',
     vendorLogo: '/images/tienda-assets/europcar.webp',
@@ -91,7 +91,7 @@ export const storeCars: StoreCar[] = [
     bags: 1,
     transmission: 'M',
     miles: 2044,
-    price: 681.36,
+    price: 2309.81,
     image: '/images/tienda-assets/i10.jpg',
     vendor: 'Alamo',
     vendorLogo: '/images/tienda-assets/alamo.webp',

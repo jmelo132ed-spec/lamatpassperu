@@ -25,12 +25,38 @@ import {
   cookieBanner,
   type City,
 } from '../data/mockData';
+import { landingContent } from '../data/landing';
+import { getTicketsUrl } from '../lib/geoRedirect';
 import { buildFareOptions } from '../data/fareBrands';
 import { fetchFlightApi, isoDate, parseFlightApi, sortRecommended, type FlightResult } from './flightApi';
 import { buildFlightCodeResolver } from './flightCodes';
 
 const USE_MOCK = import.meta.env.USE_MOCK !== 'false';
 const flightCodes = buildFlightCodeResolver(cities);
+
+export async function getLandingPageData() {
+  if (USE_MOCK) {
+    return {
+      config: {
+        ...siteConfig,
+        title: landingContent.title,
+        description: landingContent.description,
+      },
+      discoverMenu,
+      tripsMenu,
+      headerLinks,
+      footerColumns,
+      socials,
+      cookieBanner,
+      landing: landingContent,
+      ticketsHref: getTicketsUrl(),
+    };
+  }
+
+  const res = await fetch(`${import.meta.env.PUBLIC_API_URL}/landing`);
+  if (!res.ok) throw new Error('Failed to fetch landing data');
+  return res.json();
+}
 
 export async function getHomePageData() {
   if (USE_MOCK) {
@@ -80,8 +106,8 @@ function isIsoDate(value?: string) {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
 }
 
-function isEcuador(country?: string) {
-  return /ecuador/i.test(country || '');
+function isPeru(country?: string) {
+  return /per[uú]/i.test(country || '');
 }
 
 async function fetchResolvedFlights(params: {
@@ -92,7 +118,7 @@ async function fetchResolvedFlights(params: {
   children: string;
   infants: string;
   cabin: string;
-  domesticEcuador: boolean;
+  domesticPeru: boolean;
 }) {
   const originCodes = flightCodes.resolve(params.origin);
   const destCodes = flightCodes.resolve(params.destination);
@@ -122,7 +148,7 @@ async function fetchResolvedFlights(params: {
       infants: params.infants,
       cabin: params.cabin,
     });
-    const rows = parseFlightApi(payload, params.cabin, { domesticEcuador: params.domesticEcuador });
+    const rows = parseFlightApi(payload, params.cabin, { domesticPeru: params.domesticPeru });
     for (const row of rows) {
       const key = row.outboundLegId || row.id;
       if (seen.has(key)) continue;
@@ -162,11 +188,11 @@ function mockFlight(
     fare: '',
     latam: true,
     arriveNextDay: false,
-    operators: [{ name: 'LATAM Airlines Ecuador', code: 'XL' }],
+    operators: [{ name: 'LATAM Airlines Perú', code: 'LP' }],
     itinerary: [{
       flightNumber,
-      operator: 'LATAM Airlines Ecuador',
-      operatorCode: 'XL',
+      operator: 'LATAM Airlines Perú',
+      operatorCode: 'LP',
       depart,
       arrive,
       duration: '0 h 55 min',
@@ -184,10 +210,10 @@ function mockFlight(
 
 function mockResults(cabin: string): FlightResult[] {
   return [
-    mockFlight('1', 'LA 1402', '06:15', '07:10', 64.14, cabin),
-    mockFlight('2', 'LA 1406', '10:40', '11:35', 78.9, cabin),
-    mockFlight('3', 'LA 1410', '16:20', '17:15', 92.5, cabin),
-    mockFlight('4', 'LA 1414', '20:05', '21:00', 54.0, cabin),
+    mockFlight('1', 'LA 2024', '06:15', '07:30', 164.67, cabin),
+    mockFlight('2', 'LA 2028', '10:40', '11:55', 217.43, cabin),
+    mockFlight('3', 'LA 2032', '16:20', '17:35', 267.47, cabin),
+    mockFlight('4', 'LA 2036', '20:05', '21:20', 148.5, cabin),
   ];
 }
 
@@ -236,7 +262,7 @@ export async function searchFlights(params: Record<string, string>) {
         children,
         infants,
         cabin,
-        domesticEcuador: isEcuador(from.country) && isEcuador(to.country),
+        domesticPeru: isPeru(from.country) && isPeru(to.country),
       });
       return {
         ...base,

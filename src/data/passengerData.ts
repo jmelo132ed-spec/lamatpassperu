@@ -1,9 +1,9 @@
 export type DocCountry = { code: string; name: string; dial: string; flag: string };
 
 export const docCountries: DocCountry[] = [
-  { code: 'EC', name: 'Ecuador', dial: '+593', flag: '🇪🇨' },
-  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴' },
   { code: 'PE', name: 'Perú', dial: '+51', flag: '🇵🇪' },
+  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴' },
+  { code: 'EC', name: 'Ecuador', dial: '+593', flag: '🇪🇨' },
   { code: 'CL', name: 'Chile', dial: '+56', flag: '🇨🇱' },
   { code: 'AR', name: 'Argentina', dial: '+54', flag: '🇦🇷' },
   { code: 'US', name: 'Estados Unidos', dial: '+1', flag: '🇺🇸' },
@@ -18,7 +18,7 @@ export const genderOptions = [
 ];
 
 export const documentTypes = [
-  { value: 'DNI', label: 'Cédula de Identidad' },
+  { value: 'DNI', label: 'DNI' },
   { value: 'PP', label: 'Pasaporte' },
   { value: 'CE', label: 'Cédula de extranjería' },
 ];
@@ -34,15 +34,15 @@ export const assistProduct = {
   brandLogo: '/images/pax-assets/assist-card.svg',
   title: 'LATAM DOMESTIC',
   subtitle: 'Protección total a precio conveniente.',
-  pricePerPerson: 9.3,
+  pricePerPerson: 31.53,
   coverageDaysDefault: 18,
-  detailsHref: 'https://www.latamairlines.com/ec/es/experiencia-de-viaje/asistencia-en-viaje',
-  termsHref: 'https://www.latamairlines.com/ec/es/legal/terminos-y-condiciones',
-  specialAssistHref: 'https://www.latamairlines.com/ec/es/experiencia-latam/asistencia-especial',
+  detailsHref: 'https://www.latamairlines.com/pe/es/experiencia-de-viaje/asistencia-en-viaje',
+  termsHref: 'https://www.latamairlines.com/pe/es/legal/terminos-y-condiciones',
+  specialAssistHref: 'https://www.latamairlines.com/pe/es/experiencia-latam/asistencia-especial',
   benefits: [
     {
       title: 'Imprevistos médicos',
-      text: 'Asistencia por enfermedad y accidente: USD 5.000',
+      text: 'Asistencia por enfermedad y accidente: PEN 16.950',
     },
     {
       title: 'Problemas con tu equipaje de bodega',

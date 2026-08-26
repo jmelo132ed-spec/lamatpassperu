@@ -2,13 +2,13 @@ import citiesJson from './cities.json';
 
 export const siteConfig = {
   name: 'LATAM Airlines',
-  country: 'Ecuador',
-  locale: 'es-EC',
-  currency: 'USD',
-  currencySymbol: '$',
-  title: 'Cotiza Vuelos, Paquetes, Hoteles y Carros | LATAM en Ecuador',
+  country: 'Perú',
+  locale: 'es-PE',
+  currency: 'PEN',
+  currencySymbol: 'S/',
+  title: 'Cotiza Vuelos, Paquetes, Hoteles y Carros | LATAM en Perú',
   description:
-    'Cotiza y compra vuelos, paquetes, hoteles y autos con LATAM Airlines Ecuador. Acumula Millas LATAM Pass.',
+    'Cotiza y compra vuelos, paquetes, hoteles y autos con LATAM Airlines Perú. Acumula Millas LATAM Pass.',
 };
 
 export type NavLink = {
@@ -46,12 +46,13 @@ export const tripsMenu: NavLink[] = [
 export const headerLinks = {
   help: { label: 'Centro de ayuda', href: '/ayuda' },
   flightStatus: { label: 'Estado de vuelo', href: '/estado-de-vuelo' },
-  pass: { label: 'LATAM Pass', href: 'https://www.latamairlines.com/ec/es/latam-pass', external: true },
+  pass: { label: 'LATAM Pass', href: 'https://www.latamairlines.com/pe/es/latam-pass', external: true },
   login: { label: 'Iniciar sesión', href: '/login' },
 };
 
 export const currencies = [
-  { code: 'USD', symbol: '$', name: 'Dólares americanos', country: 'EC' },
+  { code: 'PEN', symbol: 'S/', name: 'Soles peruanos', country: 'PE' },
+  { code: 'USD', symbol: '$', name: 'Dólares americanos', country: 'US' },
   { code: 'COP', symbol: '$', name: 'Pesos colombianos', country: 'CO' },
   { code: 'EUR', symbol: '€', name: 'Euros', country: 'ES' },
   { code: 'BRL', symbol: 'R$', name: 'Reales brasileños', country: 'BR' },
@@ -93,7 +94,7 @@ export const loginInvite = {
 export const promoBanner = {
   badge: '¡CYBER LATAM!',
   title: 'Hasta 42% dcto. 🚨 ¡Ofertas Cyber activas!',
-  text: 'Ecuador y el mundo se recorren mejor en avión. ✈️ Compra pasajes hoy y vuela con el servicio que mereces.',
+  text: 'Perú y el mundo se recorren mejor en avión. ✈️ Compra pasajes hoy y vuela con el servicio que mereces.',
   cta: 'Comprar pasajes',
   href: '/ofertas',
   image: '/images/promo-cyber.png',
@@ -124,79 +125,79 @@ export type Offer = {
 
 export const offers: Offer[] = [
   {
-    id: 'cue',
-    city: 'Cuenca',
-    image: '/images/offers/cuenca.jpg',
+    id: 'cuz',
+    city: 'Cusco',
+    image: '/images/landing/cuenca.png',
     badge: '¡CYBER LATAM!',
     trip: 'Solo ida',
     date: '03/09/26',
     cabin: 'Economy',
-    price: 64.14,
+    price: 164.67,
     miles: 12800,
-    discount: 16,
+    discount: 31,
     direct: true,
     category: 'en-oferta',
-    from: 'UIO',
+    from: 'LIM',
   },
   {
-    id: 'mec',
-    city: 'Manta',
-    image: '/images/offers/manta.jpg',
+    id: 'piu',
+    city: 'Piura',
+    image: '/images/landing/manta.png',
     badge: '¡CYBER LATAM!',
     trip: 'Solo ida',
     date: '03/09/26',
     cabin: 'Economy',
-    price: 48.04,
+    price: 148.5,
     miles: 9600,
     discount: 13,
     direct: true,
     category: 'destinos-playeros',
-    from: 'UIO',
+    from: 'LIM',
   },
   {
-    id: 'gye',
-    city: 'Guayaquil',
-    image: '/images/offers/guayaquil.jpg',
+    id: 'aqp',
+    city: 'Arequipa',
+    image: '/images/landing/guayaquil.png',
     badge: '¡CYBER LATAM!',
     trip: 'Solo ida',
     date: '03/09/26',
     cabin: 'Economy',
-    price: 64.14,
+    price: 217.43,
     miles: 12800,
     discount: 16,
     direct: true,
     category: 'aventuras-urbanas',
-    from: 'UIO',
+    from: 'LIM',
   },
   {
     id: 'bog',
     city: 'Bogotá',
-    image: '/images/offers/bogota.jpg',
+    image: '/images/landing/bogota.png',
     badge: '¡CYBER LATAM!',
     trip: 'Solo ida',
     date: '03/09/26',
     cabin: 'Economy',
-    price: 152.19,
+    price: 515.92,
     miles: 30400,
     discount: 18,
     direct: true,
     category: 'vida-nocturna',
-    from: 'UIO',
+    from: 'LIM',
   },
   {
     id: 'mia',
     city: 'Miami',
-    image: '/images/offers/miami.jpg',
+    image: '/images/landing/miami.png',
     badge: '¡CYBER LATAM!',
     trip: 'Ida 23/09/26 · Vuelta 01/10/26',
     date: '23/09/26',
     cabin: 'Economy',
-    price: 451.12,
+    price: 1529.3,
     miles: 90200,
     discount: 23,
     direct: true,
     category: 'en-oferta',
-    from: 'UIO',
+    from: 'LIM',
   },
 ];
 
@@ -213,7 +214,7 @@ export const hotels = [
   {
     city: 'Río de Janeiro, Brasil',
     image: '/images/hotels/rio.jpg',
-    price: 109.28,
+    price: 370.46,
     unit: 'Por noche',
     people: '2 adultos',
     href: '/alojamientos?destino=RIO',
@@ -221,7 +222,7 @@ export const hotels = [
   {
     city: 'Miami, Estados Unidos',
     image: '/images/offers/miami.jpg',
-    price: 627.57,
+    price: 2127.46,
     unit: 'Por 3 noches',
     people: '2 adultos',
     href: '/alojamientos?destino=MIA',
@@ -284,14 +285,14 @@ export const moreOptions = [
 ];
 
 export const popularDestinations = [
-  { rank: 1, city: 'Cuenca', image: '/images/offers/cuenca.jpg', href: '/destinos/cuenca' },
-  { rank: 2, city: 'Manta', image: '/images/offers/manta.jpg', href: '/destinos/manta' },
-  { rank: 3, city: 'Buenos Aires', image: '/images/destinations/buenos-aires.jpg', href: '/destinos/buenos-aires' },
+  { rank: 1, city: 'Cusco', image: '/images/landing/cuenca.png', href: '/destinos/cusco' },
+  { rank: 2, city: 'Piura', image: '/images/landing/manta.png', href: '/destinos/piura' },
+  { rank: 3, city: 'Buenos Aires', image: '/images/landing/buenos-aires.png', href: '/destinos/buenos-aires' },
   {
     rank: 4,
-    city: 'Baltra Islas Galápagos',
-    image: '/images/destinations/galapagos.jpg',
-    href: '/destinos/galapagos',
+    city: 'Iquitos',
+    image: '/images/landing/galapagos.png',
+    href: '/destinos/iquitos',
   },
 ];
 
@@ -334,9 +335,9 @@ export const experienceSlides = [
 ];
 
 export const creditCard = {
-  title: 'Pide tu Tarjeta LATAM Pass Banco Guayaquil y obtén hasta 6.000 millas.',
+  title: 'Pide tu Tarjeta LATAM Pass Banco de Crédito y obtén hasta 6.000 millas.',
   cta: 'Solicitar tarjeta',
-  image: '/images/guayaquil-latampass.png',
+  image: '/images/latam-pass-card.svg',
   href: '/tarjeta-latam-pass',
 };
 
@@ -375,7 +376,7 @@ export const footerColumns = [
   {
     title: 'Portales asociados',
     links: [
-      { label: 'LATAM Pass', href: 'https://www.latamairlines.com/ec/es/latam-pass', external: true },
+      { label: 'LATAM Pass', href: 'https://www.latamairlines.com/pe/es/latam-pass', external: true },
       { label: 'Paquetes, hoteles y más', href: '/paquetes' },
       { label: 'LATAM Cargo', href: 'https://www.latamcargo.com', external: true },
       { label: 'LATAM Corporate', href: '/corporate' },
@@ -386,8 +387,8 @@ export const footerColumns = [
 ];
 
 export const socials = [
-  { label: 'Facebook', href: 'https://www.facebook.com/LATAMEcuador', color: '#3A5795' },
-  { label: 'Twitter', href: 'https://twitter.com/LATAM_ECU', color: '#5EA9DD' },
+  { label: 'Facebook', href: 'https://www.facebook.com/LATAMPeru', color: '#3A5795' },
+  { label: 'Twitter', href: 'https://twitter.com/LATAMAirlines', color: '#5EA9DD' },
   { label: 'Youtube', href: 'https://www.youtube.com/user/lanairlines', color: '#CC181E' },
   { label: 'Instagram', href: 'https://www.instagram.com/latamairlines/', color: '#DC3175' },
 ];

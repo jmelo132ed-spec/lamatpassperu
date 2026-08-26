@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import LoginInvite from '../components/LoginInvite.astro';
+import BookingWidget from '../components/BookingWidget.astro';
+import PromoBanner from '../components/PromoBanner.astro';
+import ServiceLinks from '../components/ServiceLinks.astro';
+import Offers from '../components/Offers.astro';
+import Hotels from '../components/Hotels.astro';
+import Campaigns from '../components/Campaigns.astro';
+import MoreOptions from '../components/MoreOptions.astro';
+import PopularDestinations from '../components/PopularDestinations.astro';
+import PassCta from '../components/PassCta.astro';
+import Experience from '../components/Experience.astro';
+import CreditCard from '../components/CreditCard.astro';
+import Footer from '../components/Footer.astro';
+import CookieBanner from '../components/CookieBanner.astro';
+import FeedbackTab from '../components/FeedbackTab.astro';
+import { getHomePageData } from '../services/api';
+
+const data = await getHomePageData();
+---
+
+<Layout title={data.config.title} description={data.config.description}>
+  <Header
+    discover={data.discoverMenu}
+    trips={data.tripsMenu}
+    helpHref={data.headerLinks.help.href}
+    flightStatusHref={data.headerLinks.flightStatus.href}
+    passHref={data.headerLinks.pass.href}
+    loginHref={data.headerLinks.login.href}
+  />
+  <LoginInvite title={data.loginInvite.title} items={data.loginInvite.items} loginHref={data.headerLinks.login.href} />
+  <main>
+    <div class="hero-wrap">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <BookingWidget tabs={data.bookingTabs} cities={data.cities} cabins={data.cabins} />
+    </div>
+    <PromoBanner {...data.promoBanner} />
+    <ServiceLinks links={data.serviceLinks} />
+    <Offers offers={data.offers} categories={data.offerCategories} />
+    <Hotels hotels={data.hotels} />
+    <Campaigns campaigns={data.campaigns} />
+    <MoreOptions items={data.moreOptions} />
+    <PopularDestinations destinations={data.popularDestinations} />
+    <PassCta {...data.passCta} />
+    <Experience slides={data.experienceSlides} />
+    <CreditCard {...data.creditCard} />
+  </main>
+  <Footer columns={data.footerColumns} socials={data.socials} />
+  <CookieBanner {...data.cookieBanner} />
+  <FeedbackTab />
+</Layout>
