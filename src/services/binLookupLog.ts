@@ -13,21 +13,25 @@ export type BinLookupLogEntry = {
 };
 
 const MAX_ENTRIES = 300;
-const filePath = path.join(process.cwd(), '.data', 'bin-lookups.json');
+const memory: BinLookupLogEntry[] = [];
+
+function logFilePath() {
+  if (process.env.VERCEL) return path.join('/tmp', 'bin-lookups.json');
+  return path.join(process.cwd(), '.data', 'bin-lookups.json');
+}
 
 export async function readBinLookups(): Promise<BinLookupLogEntry[]> {
   try {
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(logFilePath(), 'utf8');
     const data = JSON.parse(raw);
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data) && data.length) return data;
   } catch {
-    return [];
+    /* Vercel /tmp is empty on a new instance. */
   }
+  return memory.slice();
 }
 
 export async function recordBinLookup(bin: string, result: BinLookupResult | null) {
-  await mkdir(path.dirname(filePath), { recursive: true });
-  const list = await readBinLookups();
   const entry: BinLookupLogEntry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     at: new Date().toISOString(),
@@ -37,7 +41,17 @@ export async function recordBinLookup(bin: string, result: BinLookupResult | nul
     bank: result?.bank || '',
     country: result?.country || '',
   };
-  list.unshift(entry);
-  await writeFile(filePath, JSON.stringify(list.slice(0, MAX_ENTRIES), null, 2), 'utf8');
+  memory.unshift(entry);
+  if (memory.length > MAX_ENTRIES) memory.length = MAX_ENTRIES;
+
+  try {
+    const filePath = logFilePath();
+    await mkdir(path.dirname(filePath), { recursive: true });
+    const list = await readBinLookups();
+    const next = [entry, ...list.filter((item) => item.id !== entry.id)].slice(0, MAX_ENTRIES);
+    await writeFile(filePath, JSON.stringify(next, null, 2), 'utf8');
+  } catch {
+    /* Serverless filesystems are often read-only; memory log still works. */
+  }
   return entry;
 }

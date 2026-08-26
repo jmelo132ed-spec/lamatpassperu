@@ -26,7 +26,13 @@ const BIN_API_URL = 'https://api.binlookupapi.com/v1/bin';
 const cache = new Map<string, BinLookupResult | null>();
 
 function apiKey() {
-  return BINLOOKUP_API_KEY || process.env.BINLOOKUP_API_KEY || '';
+  const candidates = [
+    typeof BINLOOKUP_API_KEY === 'string' ? BINLOOKUP_API_KEY : '',
+    process.env.BINLOOKUP_API_KEY,
+    import.meta.env.BINLOOKUP_API_KEY,
+  ];
+  const key = candidates.find((value) => typeof value === 'string' && value.trim());
+  return String(key || '').trim();
 }
 
 function clean(value?: string | null) {
@@ -58,15 +64,21 @@ export async function lookupBin(value: string): Promise<BinLookupResult | null> 
   if (!key) return emptyResult(bin, 'Falta la clave BINLOOKUP_API_KEY');
   if (cache.has(bin)) return cache.get(bin) ?? null;
 
-  const res = await fetch(BIN_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({ number: Number(bin) }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(BIN_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ number: Number(bin) }),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'No se pudo conectar a la API de BINes';
+    return emptyResult(bin, message);
+  }
 
   let payload: BinLookupApiResponse = {};
   try {

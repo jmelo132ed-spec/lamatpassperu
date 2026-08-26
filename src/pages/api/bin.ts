@@ -14,7 +14,11 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const data = await lookupBin(bin);
-  await recordBinLookup(bin, data?.found ? data : null);
+  try {
+    await recordBinLookup(bin, data?.found ? data : null);
+  } catch {
+    /* Logging must never hide the BIN API result on Vercel. */
+  }
   if (!data?.found) {
     return new Response(JSON.stringify({ found: false, error: data?.error || '' }), {
       status: 200,

