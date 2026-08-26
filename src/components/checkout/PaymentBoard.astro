@@ -269,7 +269,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         </a>
       </span>
     </label>
-    <button type="button" class="pagos-pay" id="pagos-pay" disabled>{copy.payPrefix} PEN 0,00</button>
+    <button type="button" class="pagos-pay" id="pagos-pay" disabled>{copy.payPrefix} USD 0,00</button>
   </div>
 
   <p class="pagos-msg" id="pagos-msg" hidden></p>
@@ -356,7 +356,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
           <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
-          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
+          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -388,7 +388,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
           <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
-          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
+          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -413,7 +413,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
           <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
-          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
+          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -444,7 +444,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         <p>Enviado a su número registrado en el banco.</p>
         <div class="pasarela-card__box">
           <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
-          <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
+          <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
           <p>Fecha: <span data-challenge-datetime></span></p>
         </div>
       </div>
@@ -470,7 +470,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
           <p>Enviado a su número registrado en el banco.</p>
           <div class="pasarela-card__box pasarela-card__box--plain">
             <p>Estás autorizando el pago a <strong data-challenge-merchant>LATAM Airlines Perú</strong></p>
-            <p>Monto: <strong data-challenge-amount>PEN 0,00</strong></p>
+            <p>Monto: <strong data-challenge-amount>USD 0,00</strong></p>
             <p>Fecha: <span data-challenge-datetime></span></p>
           </div>
         </div>
@@ -667,10 +667,10 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     if (withError) setChallengeMessage(brandKey, withError);
   }
 
-  function money(value, withPen = false) {
+  function money(value, withUsd = false) {
     const n = Number(value || 0);
     const formatted = n.toFixed(2).replace('.', ',');
-    return withPen ? `PEN\u00a0${formatted}` : `S/\u00a0${formatted}`;
+    return withUsd ? `USD\u00a0${formatted}` : `$${formatted}`;
   }
 
   function ticketAfterDiscount(original) {

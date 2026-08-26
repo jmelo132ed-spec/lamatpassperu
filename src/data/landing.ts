@@ -38,7 +38,7 @@ export const landingContent = {
     {
       city: 'Cusco',
       from: 'Desde Lima',
-      price: 'PEN 164,67',
+      price: 'USD 164,67',
       discount: 42,
       text: 'La capital imperial y la puerta al Valle Sagrado.',
       image: '/images/landing/cuenca.png',
@@ -47,7 +47,7 @@ export const landingContent = {
     {
       city: 'Piura',
       from: 'Desde Lima',
-      price: 'PEN 148,50',
+      price: 'USD 148,50',
       discount: 42,
       text: 'Sol, playa y norte peruano a un vuelo de distancia.',
       image: '/images/landing/manta.png',
@@ -56,7 +56,7 @@ export const landingContent = {
     {
       city: 'Arequipa',
       from: 'Desde Lima',
-      price: 'PEN 217,43',
+      price: 'USD 217,43',
       discount: 42,
       text: 'La Ciudad Blanca y el Misti en un vuelo directo.',
       image: '/images/landing/guayaquil.png',
@@ -76,7 +76,7 @@ export const landingContent = {
     {
       city: 'Bogotá',
       from: 'Desde Lima',
-      price: 'PEN 515,92',
+      price: 'USD 515,92',
       discount: 42,
       text: 'La capital colombiana en vuelo directo.',
       image: '/images/landing/bogota.png',
@@ -85,7 +85,7 @@ export const landingContent = {
     {
       city: 'Miami',
       from: 'Desde Lima',
-      price: 'PEN 1529,30',
+      price: 'USD 1529,30',
       discount: 42,
       text: 'Playas y compras en Estados Unidos.',
       image: '/images/landing/miami.png',

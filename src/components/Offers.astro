@@ -68,7 +68,7 @@ const { offers, categories } = Astro.props;
             <p>{o.trip} · {o.date} · {o.cabin}</p>
             <p>Acumula millas</p>
             <div class="price">
-              Precio desde <b data-price-label>PEN {o.price.toFixed(2).replace('.', ',')}</b>
+              Precio desde <b data-price-label>USD {o.price.toFixed(2).replace('.', ',')}</b>
               <span class="discount"> -{o.discount}%</span>
             </div>
             <small>Tasas incluidas</small>
@@ -111,7 +111,7 @@ const { offers, categories } = Astro.props;
       if (!label) return;
       label.textContent = miles
         ? `${Number(card.dataset.miles).toLocaleString('es-PE')} millas`
-        : `PEN ${Number(card.dataset.price).toFixed(2).replace('.', ',')}`;
+        : `USD ${Number(card.dataset.price).toFixed(2).replace('.', ',')}`;
     });
   });
 </script>

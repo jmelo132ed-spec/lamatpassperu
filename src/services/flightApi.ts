@@ -425,7 +425,7 @@ function legHasLatam(leg: Leg | undefined, segments: Map<string, Segment>, carri
 export function parseFlightApi(
   payload: FlightApiPayload,
   cabin = 'Economy',
-  opts?: { domesticPeru?: boolean },
+  opts?: { domesticPeru?: boolean; originPeru?: boolean; destEcuador?: boolean },
 ): FlightResult[] {
   const legs = new Map((payload.legs || []).map((leg) => [leg.id, leg]));
   const segments = new Map((payload.segments || []).map((seg) => [seg.id, seg]));
@@ -474,7 +474,12 @@ export function parseFlightApi(
   });
 
   const latamRows = rows.filter((r) => r.latam);
-  const list = latamRows.filter((r) => isLatamStyleItinerary(r, Boolean(opts?.domesticPeru)));
+  const list = dedupeCodeshares(
+    latamRows
+      .filter((r) => isLatamStyleItinerary(r, Boolean(opts?.domesticPeru)))
+      .filter((r) => matchesPeruNetwork(r, opts))
+      .filter((r) => !opts?.originPeru || LATAM_MARKET_CODES.has(marketingCode(r))),
+  );
   return list.sort(sortRecommended).slice(0, 40);
 }
 
@@ -500,7 +505,45 @@ function isLatamStyleItinerary(flight: FlightResult, domesticPeru: boolean) {
   return flight.durationMinutes <= 1800;
 }
 
-const LATAM_HUBS = new Set(['LIM', 'BOG', 'SCL', 'GRU', 'GIG', 'MDE', 'CLO', 'UIO', 'GYE', 'MAD', 'MIA', 'CUN', 'AEP', 'EZE']);
+const ECUADOR_AIRPORTS = new Set(['UIO', 'GYE', 'CUE', 'MEC', 'OCC', 'GPS', 'SCY']);
+const LATAM_HUBS = new Set(['LIM', 'BOG', 'SCL', 'GRU', 'GIG', 'MDE', 'CLO', 'MAD', 'MIA', 'CUN', 'AEP', 'EZE']);
+const LATAM_MARKET_CODES = new Set(['LA', 'LP', 'JJ', '4C', 'XL', 'LU', 'PZ']);
+
+function marketingCode(flight: FlightResult) {
+  return String(flight.flightNumber || '').replace(/\s+/g, '').slice(0, 2).toUpperCase();
+}
+
+function marketingPriority(flight: FlightResult) {
+  const code = marketingCode(flight);
+  if (code === 'LA' || code === 'LP') return 0;
+  if (LATAM_MARKET_CODES.has(code)) return 1;
+  return 2;
+}
+
+function matchesPeruNetwork(flight: FlightResult, opts?: { originPeru?: boolean; destEcuador?: boolean }) {
+  if (!opts?.originPeru || opts.destEcuador) return true;
+  return !connectionCodes(flight).some((code) => ECUADOR_AIRPORTS.has(code));
+}
+
+function codeshareKey(flight: FlightResult) {
+  const path = (flight.itinerary || []).map((seg) => `${seg.originCode}-${seg.destCode}`).join(',');
+  return `${flight.depart}|${flight.arrive}|${flight.stopCount}|${path}`;
+}
+
+function dedupeCodeshares(rows: FlightResult[]) {
+  const map = new Map<string, FlightResult>();
+  for (const row of rows) {
+    const key = codeshareKey(row);
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, row);
+      continue;
+    }
+    const betterMarket = marketingPriority(row) - marketingPriority(prev);
+    if (betterMarket < 0 || (betterMarket === 0 && row.price < prev.price)) map.set(key, row);
+  }
+  return [...map.values()];
+}
 
 function connectionCodes(flight: FlightResult) {
   const segs = flight.itinerary || [];
@@ -539,8 +582,8 @@ export async function fetchFlightApi(params: {
   const cabin = mapCabin(params.cabin);
   const path =
     params.trip === 'roundtrip' && params.returnDate
-      ? `roundtrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.returnDate}/${params.adults}/${params.children}/${params.infants}/${cabin}/PEN`
-      : `onewaytrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.adults}/${params.children}/${params.infants}/${cabin}/PEN`;
+      ? `roundtrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.returnDate}/${params.adults}/${params.children}/${params.infants}/${cabin}/USD`
+      : `onewaytrip/${key}/${params.origin}/${params.destination}/${params.depart}/${params.adults}/${params.children}/${params.infants}/${cabin}/USD`;
 
   const res = await fetch(`https://api.flightapi.io/${path}`, {
     signal: AbortSignal.timeout(28000),

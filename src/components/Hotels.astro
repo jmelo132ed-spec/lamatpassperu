@@ -12,7 +12,7 @@ const { hotels } = Astro.props;
         <a class="hotel-card" href={h.href} style={`background-image:url('${h.image}')`}>
           <div>
             <strong>{h.city}</strong>
-            <p>PEN {h.price.toFixed(2).replace('.', ',')} · {h.unit} · {h.people}</p>
+            <p>USD {h.price.toFixed(2).replace('.', ',')} · {h.unit} · {h.people}</p>
           </div>
         </a>
       ))}

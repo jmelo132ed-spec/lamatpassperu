@@ -34,7 +34,7 @@ export const assistProduct = {
   brandLogo: '/images/pax-assets/assist-card.svg',
   title: 'LATAM DOMESTIC',
   subtitle: 'Protección total a precio conveniente.',
-  pricePerPerson: 31.53,
+  pricePerPerson: 9.3,
   coverageDaysDefault: 18,
   detailsHref: 'https://www.latamairlines.com/pe/es/experiencia-de-viaje/asistencia-en-viaje',
   termsHref: 'https://www.latamairlines.com/pe/es/legal/terminos-y-condiciones',
@@ -42,7 +42,7 @@ export const assistProduct = {
   benefits: [
     {
       title: 'Imprevistos médicos',
-      text: 'Asistencia por enfermedad y accidente: PEN 16.950',
+      text: 'Asistencia por enfermedad y accidente: USD 5.000',
     },
     {
       title: 'Problemas con tu equipaje de bodega',

@@ -52,7 +52,7 @@ export function passengerLabel(adults: number, children: number, infants: number
 }
 
 export function money(value: number) {
-  return `PEN ${value.toFixed(2).replace('.', ',')}`;
+  return `USD ${value.toFixed(2).replace('.', ',')}`;
 }
 
 export function dateStrip(selected: string, todayIso: string) {

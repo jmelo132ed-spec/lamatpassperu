@@ -64,7 +64,7 @@ const assistJson = JSON.stringify(assistProduct);
           <div class="pax-insurance__buy">
             <span class="pax-insurance__miles">Acumula millas</span>
             <span class="pax-insurance__total-label" id="pax-insurance-total-label">Total para 1 persona</span>
-            <strong class="pax-insurance__price" id="pax-insurance-price">PEN {assistProduct.pricePerPerson.toFixed(2).replace('.', ',')}</strong>
+            <strong class="pax-insurance__price" id="pax-insurance-price">USD {assistProduct.pricePerPerson.toFixed(2).replace('.', ',')}</strong>
             <button type="button" class="pax-insurance__add" id="pax-insurance-add" aria-pressed="false">Agregar</button>
           </div>
         </article>
@@ -104,7 +104,7 @@ const assistJson = JSON.stringify(assistProduct);
   <div class="pax-mobile-bar__panel">
     <button type="button" class="pax-mobile-bar__price" id="pax-mobile-price-toggle" aria-expanded="false">
       <span>Precio final <svg viewBox="0 0 32 32" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M4.45 24.23 16 12.64 27.55 24.23 30 21.78 16 7.78 2 21.78 4.45 24.23Z"/></svg></span>
-      <strong id="pax-mobile-total">PEN 0,00</strong>
+      <strong id="pax-mobile-total">USD 0,00</strong>
     </button>
     <div class="pax-mobile-bar__stretch" id="pax-mobile-stretch" aria-hidden="true"></div>
     <button type="button" class="checkout-continue pax-mobile-bar__cta" id="pax-continue-mobile">Continuar al pago</button>
@@ -141,7 +141,7 @@ const assistJson = JSON.stringify(assistProduct);
   const discountPct = Number(PORCENTAJE_DESCUENTO) || 0;
 
   function money(value) {
-    return `PEN\u00a0${Number(value || 0).toFixed(2).replace('.', ',')}`;
+    return `USD\u00a0${Number(value || 0).toFixed(2).replace('.', ',')}`;
   }
 
   function ticketAfterDiscount(original) {

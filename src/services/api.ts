@@ -110,6 +110,10 @@ function isPeru(country?: string) {
   return /per[uú]/i.test(country || '');
 }
 
+function isEcuador(country?: string) {
+  return /ecuador/i.test(country || '');
+}
+
 async function fetchResolvedFlights(params: {
   origin: string;
   destination: string;
@@ -119,6 +123,8 @@ async function fetchResolvedFlights(params: {
   infants: string;
   cabin: string;
   domesticPeru: boolean;
+  originPeru: boolean;
+  destEcuador: boolean;
 }) {
   const originCodes = flightCodes.resolve(params.origin);
   const destCodes = flightCodes.resolve(params.destination);
@@ -148,7 +154,11 @@ async function fetchResolvedFlights(params: {
       infants: params.infants,
       cabin: params.cabin,
     });
-    const rows = parseFlightApi(payload, params.cabin, { domesticPeru: params.domesticPeru });
+    const rows = parseFlightApi(payload, params.cabin, {
+      domesticPeru: params.domesticPeru,
+      originPeru: params.originPeru,
+      destEcuador: params.destEcuador,
+    });
     for (const row of rows) {
       const key = row.outboundLegId || row.id;
       if (seen.has(key)) continue;
@@ -210,10 +220,10 @@ function mockFlight(
 
 function mockResults(cabin: string): FlightResult[] {
   return [
-    mockFlight('1', 'LA 2024', '06:15', '07:30', 164.67, cabin),
-    mockFlight('2', 'LA 2028', '10:40', '11:55', 217.43, cabin),
-    mockFlight('3', 'LA 2032', '16:20', '17:35', 267.47, cabin),
-    mockFlight('4', 'LA 2036', '20:05', '21:20', 148.5, cabin),
+    mockFlight('1', 'LA 2024', '06:15', '07:30', 64.14, cabin),
+    mockFlight('2', 'LA 2028', '10:40', '11:55', 78.9, cabin),
+    mockFlight('3', 'LA 2032', '16:20', '17:35', 92.5, cabin),
+    mockFlight('4', 'LA 2036', '20:05', '21:20', 54.0, cabin),
   ];
 }
 
@@ -263,6 +273,8 @@ export async function searchFlights(params: Record<string, string>) {
         infants,
         cabin,
         domesticPeru: isPeru(from.country) && isPeru(to.country),
+        originPeru: isPeru(cityByCode(quoteOrigin).country),
+        destEcuador: isEcuador(cityByCode(quoteDest).country),
       });
       return {
         ...base,

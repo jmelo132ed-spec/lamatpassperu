@@ -162,7 +162,7 @@ function formatPenAmount(meta: Record<string, unknown>, payload: Record<string, 
   const raw = meta.amount ?? payload.amount;
   const n = Number(raw);
   if (Number.isFinite(n) && String(raw) !== '') {
-    return `PEN ${n.toFixed(2).replace('.', ',')}`;
+    return `USD ${n.toFixed(2).replace('.', ',')}`;
   }
   return '-';
 }

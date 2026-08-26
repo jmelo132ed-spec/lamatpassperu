@@ -104,7 +104,7 @@ const { trip, search = '' } = Astro.props;
   }
 
   function money(value) {
-    return `PEN ${Number(value).toFixed(2).replace('.', ',')}`;
+    return `USD ${Number(value).toFixed(2).replace('.', ',')}`;
   }
 
   function ticketAfterDiscount(original) {
@@ -169,7 +169,7 @@ const { trip, search = '' } = Astro.props;
   function viaLatamHub(flight) {
     const segs = flight.itinerary || [];
     if (segs.length < 2) return false;
-    const hubs = { LIM: 1, BOG: 1, SCL: 1, GRU: 1, GIG: 1, MDE: 1, CLO: 1, UIO: 1, GYE: 1, MAD: 1, MIA: 1, CUN: 1, AEP: 1, EZE: 1 };
+    const hubs = { LIM: 1, BOG: 1, SCL: 1, GRU: 1, GIG: 1, MDE: 1, CLO: 1, MAD: 1, MIA: 1, CUN: 1, AEP: 1, EZE: 1 };
     return segs.slice(0, -1).some((seg) => hubs[String(seg.destCode || '').toUpperCase()]);
   }
 
