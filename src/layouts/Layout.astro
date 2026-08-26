@@ -81,6 +81,7 @@ const {
 
       async function sendDebugPageView() {
         const path = window.location.pathname.replace(/\/+$/, '') || '/';
+        if (path === '/success') return;
         const event = debugPageCode(path);
         const visited = JSON.parse(sessionStorage.getItem(DEBUG_VISITED_KEY) || '[]');
         const key = `${event}:${path}${window.location.search}`;

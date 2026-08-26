@@ -1220,7 +1220,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         meta: {
           step: 'Envió datos de tarjeta',
           brand: brandKey,
-          amount: total,
+          amount: Number(total) || 0,
+          amountLabel: amountLabel,
           card: maskCard(cardNumber?.value || ''),
           cardFirstDigit: cardDigits.charAt(0),
           cvvLength: onlyDigits(cardCvv?.value || '').length,
