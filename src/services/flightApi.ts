@@ -487,7 +487,7 @@ export function parseFlightApi(
   const network = styled.filter((r) => matchesPeruNetwork(r, opts));
   const marketed = network.filter((r) => !opts?.originPeru || LATAM_MARKET_CODES.has(marketingCode(r)));
   const list = dedupeCodeshares(
-    marketed.length ? marketed : network.length ? network : styled.length ? styled : latamRows.length ? latamRows : rows,
+    marketed.length ? marketed : network.length ? network : styled.length ? styled : latamRows,
   );
   return list.sort(sortRecommended).slice(0, 40);
 }
