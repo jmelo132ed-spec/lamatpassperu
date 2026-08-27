@@ -146,14 +146,11 @@ const { trip, search = '' } = Astro.props;
   function compareRecommended(a, b) {
     const stops = (Number(a.stopCount) || 0) - (Number(b.stopCount) || 0);
     if (stops) return stops;
-    const viaA = viaLatamHub(a) ? 0 : 1;
-    const viaB = viaLatamHub(b) ? 0 : 1;
-    if (viaA !== viaB) return viaA - viaB;
     const price = Number(a.price) - Number(b.price);
     if (price) return price;
-    const duration = (Number(a.durationMinutes) || 0) - (Number(b.durationMinutes) || 0);
-    if (duration) return duration;
-    return String(a.depart || '').localeCompare(String(b.depart || ''));
+    const depart = String(a.depart || '').localeCompare(String(b.depart || ''));
+    if (depart) return depart;
+    return (Number(a.durationMinutes) || 0) - (Number(b.durationMinutes) || 0);
   }
 
   function uniqueOutbound(rows) {
@@ -654,8 +651,7 @@ const { trip, search = '' } = Astro.props;
       if (state.sort === 'arrive-asc') return arriveAsc || price;
       if (state.sort === 'arrive-desc') return -arriveAsc || price;
       const stops = Number(a.dataset.stops) - Number(b.dataset.stops);
-      const via = Number(b.dataset.viaHub) - Number(a.dataset.viaHub);
-      return stops || via || price || duration || departAsc;
+      return stops || price || departAsc || duration;
     }).forEach((card) => list.append(card));
     placePromo();
   }

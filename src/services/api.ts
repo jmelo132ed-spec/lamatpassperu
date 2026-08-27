@@ -257,7 +257,7 @@ export async function searchFlights(params: Record<string, string>) {
     returnDate,
   };
 
-  const key = FLIGHTAPI_KEY;
+  const key = (typeof FLIGHTAPI_KEY === 'string' && FLIGHTAPI_KEY.trim()) || String(process.env.FLIGHTAPI_KEY || '').trim();
   if (key) {
     const bound = params.bound === 'return' ? 'return' : 'outbound';
     const quoteOrigin = bound === 'return' ? destination : origin;
@@ -282,12 +282,11 @@ export async function searchFlights(params: Record<string, string>) {
         source: 'flightapi' as const,
         results,
       };
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : 'No se pudieron consultar las tarifas.';
-      const message = /<\s*!doctype|FlightAPI \d{3}/i.test(raw)
-        ? 'Tuvimos un problema con los resultados. Inténtalo nuevamente.'
-        : raw;
-      return { ...base, bound, source: 'flightapi' as const, results: [] as FlightResult[], error: message };
+    } catch {
+      if (USE_MOCK) {
+        return { ...base, bound, source: 'mock' as const, results: mockResults(cabin) };
+      }
+      return { ...base, bound, source: 'flightapi' as const, results: [] as FlightResult[], error: 'Tuvimos un problema con los resultados. Inténtalo nuevamente.' };
     }
   }
 

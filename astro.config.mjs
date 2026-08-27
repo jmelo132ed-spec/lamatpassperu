@@ -4,7 +4,7 @@ import vercel from '@astrojs/vercel';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  adapter: vercel(),
+  adapter: vercel({ maxDuration: 60 }),
   server: {
     host: true,
     port: 4322,

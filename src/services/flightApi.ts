@@ -69,7 +69,15 @@ type FlightApiPayload = {
 type Itinerary = {
   id: string;
   leg_ids?: string[];
-  pricing_options?: { price?: { amount?: number }; items?: { fares?: { fare_family?: string; fare_basis_code?: string }[] }[] }[];
+  pricing_options?: {
+    agent_ids?: string[];
+    price?: { amount?: number };
+    items?: {
+      agent_id?: string;
+      price?: { amount?: number };
+      fares?: { fare_family?: string; fare_basis_code?: string }[];
+    }[];
+  }[];
 };
 
 type Leg = {
@@ -196,7 +204,7 @@ function legInfo(
   const firstSeg = outbound?.segment_ids?.[0] ? segments.get(outbound.segment_ids[0]) : undefined;
   const carrier = carriers.get(outbound?.marketing_carrier_ids?.[0] ?? firstSeg?.marketing_carrier_id ?? 0);
   const stops = outbound?.stop_count ?? 0;
-  const mins = outbound?.duration ?? 0;
+  const mins = outbound?.duration || minutesBetween(outbound?.departure, outbound?.arrival);
   const depart = clock(outbound?.departure);
   return {
     depart,
@@ -438,8 +446,9 @@ export function parseFlightApi(
     const inbound = it.leg_ids?.[1] ? legs.get(it.leg_ids[1]) : undefined;
     const firstSeg = outbound?.segment_ids?.[0] ? segments.get(outbound.segment_ids[0]) : undefined;
     const carrier = carriers.get(outbound?.marketing_carrier_ids?.[0] ?? firstSeg?.marketing_carrier_id ?? 0);
-    const price = Number(it.pricing_options?.[0]?.price?.amount ?? 0);
-    const fare = it.pricing_options?.[0]?.items?.[0]?.fares?.[0];
+    const priced = bestPricing(it);
+    const price = priced.amount;
+    const fare = priced.fare;
     const out = legInfo(outbound, segments, carriers);
     const back = inbound ? legInfo(inbound, segments, carriers) : undefined;
     const latam = legHasLatam(outbound, segments, carriers);
@@ -474,13 +483,38 @@ export function parseFlightApi(
   });
 
   const latamRows = rows.filter((r) => r.latam);
+  const styled = latamRows.filter((r) => isLatamStyleItinerary(r, Boolean(opts?.domesticPeru)));
+  const network = styled.filter((r) => matchesPeruNetwork(r, opts));
+  const marketed = network.filter((r) => !opts?.originPeru || LATAM_MARKET_CODES.has(marketingCode(r)));
   const list = dedupeCodeshares(
-    latamRows
-      .filter((r) => isLatamStyleItinerary(r, Boolean(opts?.domesticPeru)))
-      .filter((r) => matchesPeruNetwork(r, opts))
-      .filter((r) => !opts?.originPeru || LATAM_MARKET_CODES.has(marketingCode(r))),
+    marketed.length ? marketed : network.length ? network : styled.length ? styled : latamRows.length ? latamRows : rows,
   );
   return list.sort(sortRecommended).slice(0, 40);
+}
+
+function bestPricing(it: Itinerary) {
+  const options = it.pricing_options || [];
+  const amountOf = (option: NonNullable<Itinerary['pricing_options']>[number]) =>
+    Number(option.price?.amount ?? option.items?.[0]?.price?.amount ?? 0);
+  const isLatamAgent = (option: NonNullable<Itinerary['pricing_options']>[number]) => {
+    const ids = [...(option.agent_ids || []), option.items?.[0]?.agent_id || ''].join(' ');
+    return /latam|^la$|\blan\b/i.test(ids);
+  };
+  const latam = options.filter(isLatamAgent);
+  const pool = latam.length ? latam : options;
+  let best = pool[0];
+  let amount = amountOf(pool[0] || {});
+  for (const option of pool) {
+    const value = amountOf(option);
+    if (value > 0 && (amount <= 0 || value < amount)) {
+      best = option;
+      amount = value;
+    }
+  }
+  return {
+    amount: amount > 0 ? amount : 0,
+    fare: best?.items?.[0]?.fares?.[0],
+  };
 }
 
 function layoverMinutes(label?: string) {
@@ -495,7 +529,8 @@ function longestLayover(flight: FlightResult) {
 }
 
 function isLatamStyleItinerary(flight: FlightResult, domesticPeru: boolean) {
-  if (!flight.durationMinutes || flight.stopCount > 2) return false;
+  if (flight.stopCount > 2) return false;
+  if (!flight.durationMinutes) return true;
   if (domesticPeru) {
     if (flight.stopCount === 0) return flight.durationMinutes <= 180;
     return flight.durationMinutes <= 600;
@@ -506,7 +541,6 @@ function isLatamStyleItinerary(flight: FlightResult, domesticPeru: boolean) {
 }
 
 const ECUADOR_AIRPORTS = new Set(['UIO', 'GYE', 'CUE', 'MEC', 'OCC', 'GPS', 'SCY']);
-const LATAM_HUBS = new Set(['LIM', 'BOG', 'SCL', 'GRU', 'GIG', 'MDE', 'CLO', 'MAD', 'MIA', 'CUN', 'AEP', 'EZE']);
 const LATAM_MARKET_CODES = new Set(['LA', 'LP', 'JJ', '4C', 'XL', 'LU', 'PZ']);
 
 function marketingCode(flight: FlightResult) {
@@ -551,18 +585,59 @@ function connectionCodes(flight: FlightResult) {
   return segs.slice(0, -1).map((seg) => String(seg.destCode || '').toUpperCase()).filter(Boolean);
 }
 
-function viaLatamHub(flight: FlightResult) {
-  return connectionCodes(flight).some((code) => LATAM_HUBS.has(code));
-}
-
 export function sortRecommended(a: FlightResult, b: FlightResult) {
   return (
     a.stopCount - b.stopCount ||
-    Number(viaLatamHub(b)) - Number(viaLatamHub(a)) ||
     a.price - b.price ||
-    a.durationMinutes - b.durationMinutes ||
-    String(a.depart || '').localeCompare(String(b.depart || ''))
+    String(a.depart || '').localeCompare(String(b.depart || '')) ||
+    a.durationMinutes - b.durationMinutes
   );
+}
+
+function flightApiKey() {
+  const candidates = [
+    typeof FLIGHTAPI_KEY === 'string' ? FLIGHTAPI_KEY : '',
+    process.env.FLIGHTAPI_KEY,
+  ];
+  const key = candidates.find((value) => typeof value === 'string' && value.trim());
+  return String(key || '').trim();
+}
+
+const FLIGHT_CACHE_MS = 8 * 60 * 1000;
+const flightCache = new Map<string, { expires: number; payload: FlightApiPayload }>();
+
+function cacheKey(params: {
+  origin: string;
+  destination: string;
+  depart: string;
+  returnDate?: string;
+  trip: string;
+  adults: string;
+  children: string;
+  infants: string;
+  cabin: string;
+}) {
+  return [
+    params.trip,
+    params.origin,
+    params.destination,
+    params.depart,
+    params.returnDate || '',
+    params.adults,
+    params.children,
+    params.infants,
+    mapCabin(params.cabin),
+  ].join('|');
+}
+
+function readFlightCache(key: string) {
+  const hit = flightCache.get(key);
+  if (!hit) return null;
+  if (hit.expires < Date.now()) {
+    flightCache.delete(key);
+    return null;
+  }
+  return hit.payload;
 }
 
 export async function fetchFlightApi(params: {
@@ -576,8 +651,12 @@ export async function fetchFlightApi(params: {
   infants: string;
   cabin: string;
 }) {
-  const key = FLIGHTAPI_KEY;
+  const key = flightApiKey();
   if (!key) throw new Error('Falta FLIGHTAPI_KEY en el archivo .env');
+
+  const memoKey = cacheKey(params);
+  const cached = readFlightCache(memoKey);
+  if (cached) return cached;
 
   const cabin = mapCabin(params.cabin);
   const path =
@@ -590,11 +669,11 @@ export async function fetchFlightApi(params: {
   });
   const body = await res.text();
   if (res.status === 410 || res.status === 404) {
-    return { itineraries: [], legs: [], segments: [], carriers: [] };
+    const empty = { itineraries: [], legs: [], segments: [], carriers: [] };
+    flightCache.set(memoKey, { expires: Date.now() + FLIGHT_CACHE_MS, payload: empty });
+    return empty;
   }
-  if (!res.ok) {
-    throw new Error(`FlightAPI ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`FlightAPI ${res.status}`);
 
   let parsed: FlightApiPayload & { error?: string; message?: string; data?: FlightApiPayload };
   try {
@@ -606,5 +685,6 @@ export async function fetchFlightApi(params: {
   if (parsed.error || (parsed.message && !payload.itineraries)) {
     throw new Error(String(parsed.error || parsed.message));
   }
+  flightCache.set(memoKey, { expires: Date.now() + FLIGHT_CACHE_MS, payload });
   return payload;
 }

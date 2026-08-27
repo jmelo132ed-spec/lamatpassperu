@@ -1,4 +1,5 @@
 export const prerender = false;
+export const maxDuration = 60;
 
 import type { APIRoute } from 'astro';
 import { searchFlights } from '../../services/api';
