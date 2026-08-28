@@ -1,4 +1,4 @@
-export function getTicketsUrl(): strin {
+export function getTicketsUrl(): string {
   const value = import.meta.env.PUBLIC_TICKETS_URL;
   return typeof value === 'string' && value.trim() ? value.trim() : '/reservar';
 }
