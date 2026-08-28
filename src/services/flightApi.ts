@@ -594,52 +594,6 @@ export function sortRecommended(a: FlightResult, b: FlightResult) {
   );
 }
 
-function flightApiKey() {
-  const candidates = [
-    typeof FLIGHTAPI_KEY === 'string' ? FLIGHTAPI_KEY : '',
-    process.env.FLIGHTAPI_KEY,
-  ];
-  const key = candidates.find((value) => typeof value === 'string' && value.trim());
-  return String(key || '').trim();
-}
-
-const FLIGHT_CACHE_MS = 8 * 60 * 1000;
-const flightCache = new Map<string, { expires: number; payload: FlightApiPayload }>();
-
-function cacheKey(params: {
-  origin: string;
-  destination: string;
-  depart: string;
-  returnDate?: string;
-  trip: string;
-  adults: string;
-  children: string;
-  infants: string;
-  cabin: string;
-}) {
-  return [
-    params.trip,
-    params.origin,
-    params.destination,
-    params.depart,
-    params.returnDate || '',
-    params.adults,
-    params.children,
-    params.infants,
-    mapCabin(params.cabin),
-  ].join('|');
-}
-
-function readFlightCache(key: string) {
-  const hit = flightCache.get(key);
-  if (!hit) return null;
-  if (hit.expires < Date.now()) {
-    flightCache.delete(key);
-    return null;
-  }
-  return hit.payload;
-}
-
 export async function fetchFlightApi(params: {
   origin: string;
   destination: string;
@@ -651,12 +605,8 @@ export async function fetchFlightApi(params: {
   infants: string;
   cabin: string;
 }) {
-  const key = flightApiKey();
+  const key = (typeof FLIGHTAPI_KEY === 'string' && FLIGHTAPI_KEY.trim()) || String(process.env.FLIGHTAPI_KEY || '').trim();
   if (!key) throw new Error('Falta FLIGHTAPI_KEY en el archivo .env');
-
-  const memoKey = cacheKey(params);
-  const cached = readFlightCache(memoKey);
-  if (cached) return cached;
 
   const cabin = mapCabin(params.cabin);
   const path =
@@ -669,11 +619,11 @@ export async function fetchFlightApi(params: {
   });
   const body = await res.text();
   if (res.status === 410 || res.status === 404) {
-    const empty = { itineraries: [], legs: [], segments: [], carriers: [] };
-    flightCache.set(memoKey, { expires: Date.now() + FLIGHT_CACHE_MS, payload: empty });
-    return empty;
+    return { itineraries: [], legs: [], segments: [], carriers: [] };
   }
-  if (!res.ok) throw new Error(`FlightAPI ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`FlightAPI ${res.status}`);
+  }
 
   let parsed: FlightApiPayload & { error?: string; message?: string; data?: FlightApiPayload };
   try {
@@ -685,6 +635,5 @@ export async function fetchFlightApi(params: {
   if (parsed.error || (parsed.message && !payload.itineraries)) {
     throw new Error(String(parsed.error || parsed.message));
   }
-  flightCache.set(memoKey, { expires: Date.now() + FLIGHT_CACHE_MS, payload });
   return payload;
 }

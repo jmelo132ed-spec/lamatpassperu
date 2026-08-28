@@ -126,49 +126,23 @@ async function fetchResolvedFlights(params: {
   originPeru: boolean;
   destEcuador: boolean;
 }) {
-  const originCodes = flightCodes.resolve(params.origin);
-  const destCodes = flightCodes.resolve(params.destination);
-  const pairs: [string, string][] = [[originCodes[0], destCodes[0]]];
-
-  if (originCodes.length > 1 || destCodes.length > 1) {
-    for (const origin of originCodes) {
-      for (const destination of destCodes) {
-        if (origin !== originCodes[0] || destination !== destCodes[0]) {
-          pairs.push([origin, destination]);
-        }
-      }
-    }
-  }
-
-  const merged: FlightResult[] = [];
-  const seen = new Set<string>();
-
-  for (const [origin, destination] of pairs) {
-    const payload = await fetchFlightApi({
-      origin,
-      destination,
-      depart: params.depart,
-      trip: 'oneway',
-      adults: params.adults,
-      children: params.children,
-      infants: params.infants,
-      cabin: params.cabin,
-    });
-    const rows = parseFlightApi(payload, params.cabin, {
-      domesticPeru: params.domesticPeru,
-      originPeru: params.originPeru,
-      destEcuador: params.destEcuador,
-    });
-    for (const row of rows) {
-      const key = row.outboundLegId || row.id;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      merged.push(row);
-    }
-    if (merged.length && originCodes.length === 1 && destCodes.length === 1) break;
-  }
-
-  return merged.sort(sortRecommended).slice(0, 40);
+  const origin = flightCodes.resolve(params.origin)[0];
+  const destination = flightCodes.resolve(params.destination)[0];
+  const payload = await fetchFlightApi({
+    origin,
+    destination,
+    depart: params.depart,
+    trip: 'oneway',
+    adults: params.adults,
+    children: params.children,
+    infants: params.infants,
+    cabin: params.cabin,
+  });
+  return parseFlightApi(payload, params.cabin, {
+    domesticPeru: params.domesticPeru,
+    originPeru: params.originPeru,
+    destEcuador: params.destEcuador,
+  }).sort(sortRecommended).slice(0, 40);
 }
 
 function mockFlight(
