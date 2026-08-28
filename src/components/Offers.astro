@@ -20,6 +20,27 @@ interface Props {
   categories: Cat[];
 }
 const { offers, categories } = Astro.props;
+
+function toIso(dmy?: string) {
+  const match = String(dmy || '').match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+  if (!match) return '';
+  return `20${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function offerHref(o: Offer) {
+  const depart = toIso(o.date);
+  const returnRaw = (o.trip.match(/vuelta\s+(\d{2}\/\d{2}\/\d{2})/i) || [])[1];
+  const isRoundtrip = Boolean(returnRaw);
+  const params = new URLSearchParams({
+    origin: o.from,
+    destination: o.id.toUpperCase(),
+    trip: isRoundtrip ? 'roundtrip' : 'OW',
+    cabin: 'Economy',
+  });
+  if (depart) params.set('depart', depart);
+  if (isRoundtrip) params.set('return', toIso(returnRaw));
+  return `/ofertas-vuelos?${params.toString()}`;
+}
 ---
 
 <section class="section" id="ofertas">
@@ -55,7 +76,7 @@ const { offers, categories } = Astro.props;
       {offers.map((o) => (
         <a
           class="offer-card"
-          href={`/ofertas-vuelos?origin=${o.from}&destination=${o.id.toUpperCase()}&trip=OW&cabin=Economy`}
+          href={offerHref(o)}
           data-cat={o.category}
           data-price={o.price}
           data-miles={o.miles}
