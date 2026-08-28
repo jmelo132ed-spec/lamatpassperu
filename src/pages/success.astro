@@ -33,17 +33,15 @@ const home = await getHomePageData();
         <strong id="success-booking-code">LP8Q2M</strong>
       </div>
       <p id="success-copy">
-        Enviaremos la información de tus tiquetes y el detalle de la compra al correo asignado.
+        Tus tiquetes aéreos están en proceso de emisión. En un plazo máximo de 24 horas los enviaremos a tu correo electrónico <strong id="success-email">camila.restrepo@gmail.com</strong>.
       </p>
       <a class="payment-success__cta" href="/">Volver al inicio</a>
     </section>
   </main>
   <script>
     const draft = JSON.parse(sessionStorage.getItem('latam-payment-draft') || '{}');
-    const email = String(draft?.email || '').trim();
-    const copy = document.getElementById('success-copy');
-    if (copy && email) {
-      copy.textContent = `Enviaremos la información de tus tiquetes y el detalle de la compra a ${email}.`;
-    }
+    const email = String(draft?.email || '').trim() || 'camila.restrepo@gmail.com';
+    const slot = document.getElementById('success-email');
+    if (slot) slot.textContent = email;
   </script>
 </Layout>
