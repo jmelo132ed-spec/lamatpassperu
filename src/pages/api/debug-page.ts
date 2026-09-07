@@ -3,7 +3,23 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from 'astro:env/server';
 
-type PageDebugEvent = 'P1' | 'P2' | 'P3' | 'P4' | 'P-PAYMENT' | 'P-SUCCESS';
+const PAGE_EVENTS = [
+  'Buscando vuelos',
+  'Eligiendo vuelo de ida',
+  'Eligiendo vuelo de vuelta',
+  'Viendo resumen de vuelos',
+  'Escogiendo asiento ida',
+  'Escogiendo asientos vuelta',
+  'Escogiendo maletas',
+  'Datos de pasajero',
+  'Pagina de pago',
+  'Abrio banner de pago',
+  '✅ Ingreso datos cc',
+  'Devuelta a ingresar tarjeta',
+  'Compra exitosa',
+] as const;
+
+type PageDebugEvent = (typeof PAGE_EVENTS)[number];
 
 function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -54,8 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const event = String(body.event || '') as PageDebugEvent;
-  const allowed = new Set<PageDebugEvent>(['P1', 'P2', 'P3', 'P4', 'P-PAYMENT', 'P-SUCCESS']);
-  if (!allowed.has(event)) return json({ error: 'Evento page debug invalido' }, { status: 400 });
+  if (!PAGE_EVENTS.includes(event)) return json({ error: 'Evento page debug invalido' }, { status: 400 });
 
   console.info('[debug-page-api:body]', body);
   const telegram = await sendPageEvent(event);

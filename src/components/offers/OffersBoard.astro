@@ -789,6 +789,7 @@ const { trip, search = '' } = Astro.props;
       payload.results = rows;
       list.innerHTML = rows.map((row, index) => cardHtml(row, 'inbound', rows, index)).join('');
       applyFilters();
+      window.sendTelegramStep?.('Eligiendo vuelo de vuelta');
     } catch {
       show(waiting, false);
       document.body.classList.remove('is-offers-waiting');
@@ -823,6 +824,7 @@ const { trip, search = '' } = Astro.props;
         return;
       }
       renderOutbound();
+      if (payload.results.length) window.sendTelegramStep?.('Eligiendo vuelo de ida');
     } catch {
       show(waiting, false);
       document.body.classList.remove('is-offers-waiting');

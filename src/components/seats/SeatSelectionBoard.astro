@@ -473,6 +473,10 @@ const rowsJson = JSON.stringify(rows);
       renderLegend();
     });
 
+    function notifySeatLeg() {
+      if (currentLegId() === 'inbound') window.sendTelegramStep?.('Escogiendo asientos vuelta');
+    }
+
     tabsEl.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-leg]');
       if (!btn) return;
@@ -481,6 +485,7 @@ const rowsJson = JSON.stringify(rows);
       state.legIndex = next;
       renderAll();
       playLegTransition();
+      notifySeatLeg();
     });
 
     function seatPosition(letter) {
@@ -671,6 +676,7 @@ const rowsJson = JSON.stringify(rows);
         state.legIndex += 1;
         renderAll();
         playLegTransition();
+        notifySeatLeg();
         return;
       }
       goStore();
