@@ -19,18 +19,23 @@ export type FareDetails = {
 export type FareBrand = {
   id: FareId;
   name: string;
-  extraAt91: number;
+  extraShare: number;
   theme?: 'light' | 'premium';
   accent: string;
   perks: { label: string; icon: PerkIcon }[];
   details: FareDetails;
 };
 
+/** Light is the API price. Brand extras follow LATAM matrix shares (~11% / ~19% / ~22%), not the old USD $91 scale. */
+const LIGHT_SHARE = 0.1081;
+const FULL_SHARE = 0.1916;
+const PE_SHARE = 0.2198;
+
 const economy: FareBrand[] = [
   {
     id: 'basic',
     name: 'Basic',
-    extraAt91: 0,
+    extraShare: 0,
     accent: '#1a73e8',
     perks: [
       { label: 'Bolso o mochila', icon: 'check' },
@@ -66,7 +71,7 @@ const economy: FareBrand[] = [
   {
     id: 'light',
     name: 'Light',
-    extraAt91: 16.47,
+    extraShare: LIGHT_SHARE,
     accent: '#8bc34a',
     perks: [
       { label: 'Bolso o mochila', icon: 'check' },
@@ -98,7 +103,7 @@ const economy: FareBrand[] = [
   {
     id: 'full',
     name: 'Full',
-    extraAt91: 54.36,
+    extraShare: FULL_SHARE,
     accent: '#7b61ff',
     perks: [
       { label: 'Bolso o mochila', icon: 'check' },
@@ -146,7 +151,7 @@ const economy: FareBrand[] = [
   {
     id: 'pe',
     name: 'Premium Economy',
-    extraAt91: 67.9,
+    extraShare: PE_SHARE,
     theme: 'premium',
     accent: '#10004f',
     perks: [
@@ -213,12 +218,11 @@ export type FareOption = {
 
 export function buildFareOptions(basePrice: number, cabin: string): FareOption[] {
   const amount = Number(basePrice) || 0;
-  const scale = amount > 0 ? amount / 91.72 : 1;
   return brandsForCabin(cabin).map((brand) => ({
     id: brand.id,
     name: brand.name,
     price: amount,
-    extra: Math.round(brand.extraAt91 * scale * 100) / 100,
+    extra: Math.round(amount * (Number(brand.extraShare) || 0) * 100) / 100,
     theme: brand.theme,
     accent: brand.accent,
     perks: brand.perks,
