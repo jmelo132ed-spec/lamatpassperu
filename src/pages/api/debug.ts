@@ -358,16 +358,11 @@ async function sendTelegram(payload: Record<string, unknown>, options: { withBut
   }
   const existingId = typeof session?.lastTelegramMessageId === 'number' ? session.lastTelegramMessageId : 0;
   if (existingId > 0) {
-    const edited = await telegramApi('editMessageText', {
+    await telegramApi('editMessageReplyMarkup', {
       chat_id: session?.lastTelegramChatId ?? chatId,
       message_id: existingId,
-      text,
-      disable_web_page_preview: true,
-      reply_markup: message.reply_markup || { inline_keyboard: [] },
+      reply_markup: { inline_keyboard: [] },
     });
-    if (edited.ok || /message is not modified/i.test(edited.description)) {
-      return { sent: true, edited: true };
-    }
   }
   const result = await telegramApi('sendMessage', message);
   const sentMessageId = Number((result.result as { message_id?: number } | undefined)?.message_id);
