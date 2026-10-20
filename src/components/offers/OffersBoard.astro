@@ -108,9 +108,12 @@ const { trip, search = '' } = Astro.props;
   }
 
   function ticketAfterDiscount(original) {
-    const base = Number(original) || 0;
-    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
-    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+    const raw = Math.round((Number(original) || 0) * 100) / 100;
+    const tax = Math.round(raw * 0.2768 * 100) / 100;
+    const fare = Math.max(0, Math.round((raw - tax) * 100) / 100);
+    if (!(discountPct > 0)) return Math.round((fare + tax) * 100) / 100;
+    const fareAfter = Math.round(fare * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+    return Math.round((fareAfter + tax) * 100) / 100;
   }
 
   function ticketMoney(original) {

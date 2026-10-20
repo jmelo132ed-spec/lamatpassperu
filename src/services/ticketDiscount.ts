@@ -1,4 +1,7 @@
-/** Discount applied only to flight ticket prices (not seats, bags, etc.). */
+/** Share of tasas/impuestos inside the displayed ticket total. */
+export const TICKET_TAX_RATIO = 0.2768;
+
+/** Discount applied only to the airline fare (not taxes, seats, bags, etc.). */
 
 export function normalizeDiscountPercent(raw: unknown): number {
   const n = Number(raw);
@@ -12,9 +15,11 @@ function round2(n: number): number {
 
 export function ticketAfterDiscount(original: number, percent: unknown): number {
   const p = normalizeDiscountPercent(percent);
-  const base = Number(original) || 0;
-  if (p <= 0) return round2(base);
-  return round2(base * (1 - p / 100));
+  const raw = round2(original);
+  const tax = round2(raw * TICKET_TAX_RATIO);
+  const fare = Math.max(0, round2(raw - tax));
+  if (p <= 0) return round2(fare + tax);
+  return round2(fare * (1 - p / 100) + tax);
 }
 
 /** HTML with before/after when discount > 0; otherwise a single price. */

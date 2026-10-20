@@ -35,15 +35,25 @@ import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
   }
 
   function ticketAfterDiscount(original) {
-    const base = Number(original) || 0;
-    if (!(discountPct > 0)) return Math.round(base * 100) / 100;
-    return Math.round(base * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+    const raw = Math.round((Number(original) || 0) * 100) / 100;
+    const tax = Math.round(raw * 0.2768 * 100) / 100;
+    const fare = Math.max(0, Math.round((raw - tax) * 100) / 100);
+    if (!(discountPct > 0)) return Math.round((fare + tax) * 100) / 100;
+    const fareAfter = Math.round(fare * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+    return Math.round((fareAfter + tax) * 100) / 100;
   }
 
   function ticketMoney(original) {
     const before = Number(original) || 0;
     if (!(discountPct > 0)) return money(before);
     return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(ticketAfterDiscount(before))}</span></span>`;
+  }
+
+  function fareOnlyMoney(fareOnly) {
+    const before = Number(fareOnly) || 0;
+    if (!(discountPct > 0)) return money(before);
+    const after = Math.round(before * (1 - Math.min(100, discountPct) / 100) * 100) / 100;
+    return `<span class="ticket-price"><span class="ticket-price__was">${money(before)}</span><span class="ticket-price__now">${money(after)}</span></span>`;
   }
 
   function readSelection() {
@@ -178,11 +188,11 @@ import { PORCENTAJE_DESCUENTO } from 'astro:env/client';
       <section class="trip-summary-price">
         <div class="trip-summary-price__row">
           <span>Vuelos</span>
-          <strong>${ticketMoney(partsBefore.flights)}</strong>
+          <strong>${fareOnlyMoney(partsBefore.flights)}</strong>
         </div>
         <div class="trip-summary-price__row">
           <span>Tasas, cargos e impuestos</span>
-          <strong>${ticketMoney(partsBefore.taxes)}</strong>
+          <strong>${money(partsBefore.taxes)}</strong>
         </div>
         <div class="trip-summary-price__total">
           <div>
